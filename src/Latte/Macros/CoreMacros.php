@@ -89,20 +89,13 @@ class CoreMacros extends MacroSet
 	}
 
 
-	/**
-	 * Initializes before template parsing.
-	 * @return void
-	 */
-	public function initialize()
+	public function beforeCompile(): void
 	{
 		$this->overwrittenVars = [];
 		$this->idCounter = 0;
 	}
 
 
-	/**
-	 * Finishes template parsing.
-	 */
 	public function finalize()
 	{
 		if ($this->printTemplate) {

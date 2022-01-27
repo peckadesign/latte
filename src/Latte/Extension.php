@@ -9,40 +9,50 @@ declare(strict_types=1);
 
 namespace Latte;
 
-use Latte\Compiler\Tag;
-
 
 /**
  * Latte extension.
  */
-interface Extension
+abstract class Extension
 {
 	public const
 		AUTO_CLOSE = 64,
 		ALLOWED_IN_HEAD = 128,
 		DEFAULT_FLAGS = 0;
 
-	/**
-	 * Initializes before template parsing.
-	 * @return void
-	 */
-	function initialize();
 
 	/**
-	 * Finishes template parsing.
-	 * @return array{string, string}|array{string}|null  (prolog, epilog)
+	 * Initializes before template is compiler.
 	 */
-	function finalize();
+	public function beforeCompile(): void
+	{
+	}
+
 
 	/**
-	 * New node is found. Returns false to reject.
-	 * @return bool|null
+	 * Returns a list of |filters.
+	 * @return array<string, callable>
 	 */
-	function nodeOpened(Tag $tag);
+	public function getFilters(): array
+	{
+		return [];
+	}
+
 
 	/**
-	 * Node is closed.
-	 * @return void
+	 * Returns a list of functions used in templates.
+	 * @return array<string, callable>
 	 */
-	function nodeClosed(Tag $tag);
+	public function getFunctions(): array
+	{
+		return [];
+	}
+
+
+	/**
+	 * Initializes before template is rendered.
+	 */
+	public function beforeRender(Engine $engine): void
+	{
+	}
 }

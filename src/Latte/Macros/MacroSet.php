@@ -18,7 +18,7 @@ use Latte\Compiler\Tag;
 /**
  * Base Macro implementation. Allows add multiple macros.
  */
-abstract class MacroSet implements Latte\Extension
+abstract class MacroSet extends Latte\Extension
 {
 	use Latte\Strict;
 
@@ -59,18 +59,6 @@ abstract class MacroSet implements Latte\Extension
 	}
 
 
-	/**
-	 * Initializes before template parsing.
-	 * @return void
-	 */
-	public function initialize()
-	{
-	}
-
-
-	/**
-	 * Finishes template parsing.
-	 */
 	public function finalize()
 	{
 		return null;
