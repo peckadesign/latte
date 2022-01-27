@@ -106,6 +106,10 @@ class Engine
 			$this->loadTemplate($name);
 		}
 
+		foreach ($this->extensions as $extension) {
+			$extension->beforeRender($this);
+		}
+
 		$this->providers['fn'] = $this->functions;
 		return new $class(
 			$this,
