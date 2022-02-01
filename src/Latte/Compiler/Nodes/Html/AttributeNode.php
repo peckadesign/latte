@@ -34,4 +34,12 @@ class AttributeNode extends ContentNode
 		}
 		return $res;
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		if ($this->value) {
+			yield $this->value;
+		}
+	}
 }

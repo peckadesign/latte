@@ -48,4 +48,12 @@ final class FragmentNode extends ContentNode
 
 		return $res;
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		foreach ($this->children as &$item) {
+			yield $item;
+		}
+	}
 }
