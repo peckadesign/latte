@@ -164,4 +164,19 @@ class ElementNode extends AreaNode
 
 		$context->setEscapingContext($escapingContext);
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		yield $this->tagNode;
+		if ($this->variableName) {
+			yield $this->variableName;
+		}
+		if ($this->attrs) {
+			yield $this->attrs;
+		}
+		if ($this->content) {
+			yield $this->content;
+		}
+	}
 }
