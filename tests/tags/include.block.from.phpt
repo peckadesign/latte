@@ -15,7 +15,8 @@ $latte = new Latte\Engine;
 $latte->setLoader(new Latte\Loaders\StringLoader([
 	'main1' => 'before {include bl from inc, var => 1} after',
 	'main2' => 'before {include block bl from inc, var => 1} after',
-	'main3' => '<div title="{include bl from inc, var => 1}">',
+	'main3' => '<div title={include bl from inc, var => 1}>',
+	'main3q' => '<div title="{include bl from inc, var => 1}">',
 	'main4' => 'before {include block loc from inc} after',
 	'main5' => 'before {include block bl from inc.ext, var => 1} after',
 	'main6' => '{var $var = 1} {include block bl from inc} after',
@@ -34,9 +35,13 @@ Assert::match(
 	$latte->renderToString('main2'),
 );
 
+Assert::error(function () use ($latte) {
+	$latte->renderToString('main3');
+}, Latte\RuntimeException::class, "Including 'inc' with content type HTML into incompatible type HTMLTAG.");
+
 Assert::match(
 	'<div title="&lt;b&gt;block 1&lt;/b&gt;">',
-	$latte->renderToString('main3'),
+	$latte->renderToString('main3q'),
 );
 
 Assert::match(
