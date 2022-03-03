@@ -251,7 +251,7 @@ class CoreMacros extends MacroSet
 			throw new CompileException("Unknown {$node->getNotation()}, use n:{$node->name} attribute.");
 		}
 		if ($node->htmlNode->empty) {
-			trigger_error("Unnecessary n:content on empty element <{$node->htmlNode->name}> on line " . $this->getCompiler()->getLine(), E_USER_DEPRECATED);
+			throw new CompileException("Unnecessary n:content on empty element <{$node->htmlNode->name}>");
 		}
 
 		$node->validate(false);
