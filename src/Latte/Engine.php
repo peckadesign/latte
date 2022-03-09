@@ -327,11 +327,11 @@ class Engine
 
 
 	/**
-	 * Adds new macro.
+	 * Adds new extension.
 	 */
-	public function addMacro(string $name, Macro $macro): static
+	public function addExtension(string $name, Extension $extension): static
 	{
-		$this->getCompiler()->addMacro($name, $macro);
+		$this->getCompiler()->addMacro($name, $extension);
 		return $this;
 	}
 
