@@ -18,7 +18,7 @@ use Latte\Compiler\Tag;
 /**
  * Base Macro implementation. Allows add multiple macros.
  */
-class MacroSet implements Latte\Macro
+class MacroSet implements Latte\Extension
 {
 	use Latte\Strict;
 
