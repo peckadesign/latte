@@ -117,17 +117,17 @@ final class Tag
 	public function validate(string|bool|null $arguments, array $parents = [], bool $modifiers = false): void
 	{
 		if ($parents && (!$this->parentNode || !in_array($this->parentNode->name, $parents, true))) {
-			throw new CompileException('Tag ' . $this->getNotation() . ' is unexpected here.');
+			throw new CompileException('Tag ' . $this->getNotation() . ' is unexpected here.', $this->line);
 
 		} elseif ($this->modifiers !== '' && !$modifiers) {
-			throw new CompileException('Filters are not allowed in ' . $this->getNotation());
+			throw new CompileException('Filters are not allowed in ' . $this->getNotation(), $this->line);
 
 		} elseif ($arguments && $this->args === '') {
 			$label = is_string($arguments) ? $arguments : 'arguments';
-			throw new CompileException('Missing ' . $label . ' in ' . $this->getNotation());
+			throw new CompileException('Missing ' . $label . ' in ' . $this->getNotation(), $this->line);
 
 		} elseif ($arguments === false && $this->args !== '') {
-			throw new CompileException('Arguments are not allowed in ' . $this->getNotation());
+			throw new CompileException('Arguments are not allowed in ' . $this->getNotation(), $this->line);
 		}
 	}
 }

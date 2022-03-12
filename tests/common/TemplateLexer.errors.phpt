@@ -13,7 +13,6 @@ test('', function () {
 	$lexer = new TemplateLexer;
 	$lexer->tokenize("\n{a}");
 	$lexer->tokenize('');
-	Assert::same(1, $lexer->getLine());
 });
 
 $lexer = new TemplateLexer;
@@ -22,16 +21,14 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Template is not valid UTF-8 stream.',
 );
-Assert::same(1, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
-Assert::exception(
+$e = Assert::exception(
 	fn() => $lexer->tokenize("žluťoučký\n\xA0\xA0"),
 	Latte\CompileException::class,
-	'Template is not valid UTF-8 stream.',
+	'Template is not valid UTF-8 stream (on line 2)',
 );
-Assert::same(2, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
@@ -40,16 +37,14 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Malformed tag contents.',
 );
-Assert::same(1, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => $lexer->tokenize("\n{* \n'abc}"),
 	Latte\CompileException::class,
-	'Malformed tag contents.',
+	'Malformed tag contents (on line 2)',
 );
-Assert::same(2, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
@@ -58,16 +53,14 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Malformed tag.',
 );
-Assert::same(1, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => $lexer->tokenize("\n{"),
 	Latte\CompileException::class,
-	'Malformed tag.',
+	'Malformed tag (on line 2)',
 );
-Assert::same(2, $lexer->getLine());
 
 
 $lexer = new TemplateLexer;
@@ -76,4 +69,3 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Template contains control character \x0',
 );
-Assert::same(1, $lexer->getLine());
