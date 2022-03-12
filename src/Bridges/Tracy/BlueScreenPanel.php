@@ -50,7 +50,7 @@ class BlueScreenPanel
 								: '<b>' . htmlspecialchars($e->sourceName . ($e->sourceLine ? ':' . $e->sourceLine : '')) . '</b>')
 							. '</p>')
 					. '<pre class=code><div>'
-					. BlueScreen::highlightLine(htmlspecialchars($e->sourceCode, ENT_IGNORE, 'UTF-8'), $e->sourceLine)
+					. BlueScreen::highlightLine(htmlspecialchars($e->sourceCode, ENT_IGNORE, 'UTF-8'), $e->sourceLine, 15, $e->sourceColumn)
 					. '</div></pre>',
 			];
 
