@@ -169,7 +169,7 @@ final class TemplateGenerator
 		}
 
 		while ($this->macroNode) {
-			if ($this->macroNode->parentNode) {
+			if ($this->macroNode->parent) {
 				throw new CompileException('Missing {/' . $this->macroNode->name . '}');
 			}
 
@@ -384,7 +384,7 @@ final class TemplateGenerator
 		} else {
 			$node = $this->openMacro($token->name, $token->value, $token->modifiers, $isRightmost);
 			if ($token->empty) {
-				if ($node->empty) {
+				if ($node->void) {
 					throw new CompileException("Unexpected /} in tag {$token->text}");
 				}
 
@@ -496,7 +496,7 @@ final class TemplateGenerator
 			if (isset($this->htmlNode->macroAttrs[$name])) {
 				throw new CompileException("Found multiple attributes {$token->name}.");
 
-			} elseif ($this->macroNode && $this->macroNode->htmlNode === $this->htmlNode) {
+			} elseif ($this->macroNode && $this->macroNode->htmlElement === $this->htmlNode) {
 				throw new CompileException("n:attribute must not appear inside tags; found {$token->name} inside {{$this->macroNode->name}}.");
 			}
 
@@ -576,9 +576,9 @@ final class TemplateGenerator
 		?string $nPrefix = null,
 	): Tag {
 		$node = $this->expandMacro($name, $args, $modifiers, $nPrefix);
-		if ($node->empty) {
+		if ($node->void) {
 			$this->writeCode((string) $node->openingCode, $node->replaced, $isRightmost);
-			if ($node->prefix && $node->prefix !== Tag::PREFIX_TAG) {
+			if ($node->isNAttribute() && $node->prefix !== Tag::PrefixTag) {
 				$this->htmlNode->attrCode .= $node->attrCode;
 			}
 		} else {
@@ -615,16 +615,16 @@ final class TemplateGenerator
 			$name = $nPrefix
 				? "</{$this->htmlNode->name}> for " . TemplateLexer::NPrefix . implode(' and ' . TemplateLexer::NPrefix, array_keys($this->htmlNode->macroAttrs))
 				: '{/' . $name . ($args ? ' ' . $args : '') . $modifiers . '}';
-			throw new CompileException("Unexpected $name" . ($node ? ', expecting ' . self::printEndTag($node->prefix ? $this->htmlNode : $node) : ''));
+			throw new CompileException("Unexpected $name" . ($node ? ', expecting ' . self::printEndTag($node->isNAttribute() ? $this->htmlNode : $node) : ''));
 		}
 
-		$this->macroNode = $node->parentNode;
+		$this->macroNode = $node->parent;
 		if ($node->args === '') {
 			$node->setArgs($args);
 		}
 
-		if ($node->prefix === Tag::PREFIX_NONE) {
-			$parts = explode($node->htmlNode->innerMarker, $node->content);
+		if ($node->prefix === Tag::PrefixNone) {
+			$parts = explode($node->htmlElement->innerMarker, $node->content);
 			if (count($parts) === 3) { // markers may be destroyed by inner macro
 				$node->innerContent = $parts[1];
 			}
@@ -634,10 +634,10 @@ final class TemplateGenerator
 		$node->macro->nodeClosed($node);
 
 		if (isset($parts[1]) && $node->innerContent !== $parts[1]) {
-			$node->content = implode($node->htmlNode->innerMarker, [$parts[0], $node->innerContent, $parts[2]]);
+			$node->content = implode($node->htmlElement->innerMarker, [$parts[0], $node->innerContent, $parts[2]]);
 		}
 
-		if ($node->prefix && $node->prefix !== Tag::PREFIX_TAG) {
+		if ($node->isNAttribute() && $node->prefix !== Tag::PrefixTag) {
 			$this->htmlNode->attrCode .= $node->attrCode;
 		}
 
@@ -684,7 +684,7 @@ final class TemplateGenerator
 		$left = $right = [];
 
 		foreach ($this->macros as $name => $foo) {
-			$attrName = Tag::PREFIX_INNER . "-$name";
+			$attrName = Tag::PrefixInner . "-$name";
 			if (!isset($attrs[$attrName])) {
 				continue;
 			}
@@ -694,11 +694,11 @@ final class TemplateGenerator
 
 			if ($this->htmlNode->closing) {
 				$left[] = function () use ($name) {
-					$this->closeMacro($name, '', '', false, Tag::PREFIX_INNER);
+					$this->closeMacro($name, '', '', false, Tag::PrefixInner);
 				};
 			} else {
 				array_unshift($right, function () use ($name, $attrs, $attrName) {
-					if ($this->openMacro($name, $attrs[$attrName], '', false, Tag::PREFIX_INNER)->empty) {
+					if ($this->openMacro($name, $attrs[$attrName], '', false, Tag::PrefixInner)->void) {
 						throw new CompileException("Unexpected prefix in n:$attrName.");
 					}
 				});
@@ -719,7 +719,7 @@ final class TemplateGenerator
 		}
 
 		foreach (array_reverse($this->macros) as $name => $foo) {
-			$attrName = Tag::PREFIX_TAG . "-$name";
+			$attrName = Tag::PrefixTag . "-$name";
 			if (!isset($attrs[$attrName])) {
 				continue;
 			}
@@ -728,12 +728,12 @@ final class TemplateGenerator
 			}
 
 			$left[] = function () use ($name, $attrs, $attrName) {
-				if ($this->openMacro($name, $attrs[$attrName], '', false, Tag::PREFIX_TAG)->empty) {
+				if ($this->openMacro($name, $attrs[$attrName], '', false, Tag::PrefixTag)->void) {
 					throw new CompileException("Unexpected prefix in n:$attrName.");
 				}
 			};
 			array_unshift($right, function () use ($name) {
-				$this->closeMacro($name, '', '', false, Tag::PREFIX_TAG);
+				$this->closeMacro($name, '', '', false, Tag::PrefixTag);
 			});
 			unset($attrs[$attrName]);
 		}
@@ -742,12 +742,12 @@ final class TemplateGenerator
 			if (isset($attrs[$name])) {
 				if ($this->htmlNode->closing) {
 					$right[] = function () use ($name) {
-						$this->closeMacro($name, '', '', false, Tag::PREFIX_NONE);
+						$this->closeMacro($name, '', '', false, Tag::PrefixNone);
 					};
 				} else {
 					array_unshift($left, function () use ($name, $attrs, &$innerMarker) {
-						$node = $this->openMacro($name, $attrs[$name], '', false, Tag::PREFIX_NONE);
-						if ($node->empty) {
+						$node = $this->openMacro($name, $attrs[$name], '', false, Tag::PrefixNone);
+						if ($node->void) {
 							unset($this->htmlNode->macroAttrs[$name]); // don't call closeMacro
 						} elseif (!$innerMarker) {
 							$this->htmlNode->innerMarker = $innerMarker = '<n:q' . count($this->placeholders) . 'q>';
@@ -820,9 +820,9 @@ final class TemplateGenerator
 			}
 		}
 
-		if ($nPrefix === Tag::PREFIX_INNER && !strcasecmp($this->htmlNode->name, 'script')) {
+		if ($nPrefix === Tag::PrefixInner && !strcasecmp($this->htmlNode->name, 'script')) {
 			$context = [$this->contentType, Context::HtmlJavaScript];
-		} elseif ($nPrefix === Tag::PREFIX_INNER && !strcasecmp($this->htmlNode->name, 'style')) {
+		} elseif ($nPrefix === Tag::PrefixInner && !strcasecmp($this->htmlNode->name, 'style')) {
 			$context = [$this->contentType, Context::HtmlCss];
 		} elseif ($nPrefix) {
 			$context = [$this->contentType, Context::HtmlText];
@@ -831,16 +831,24 @@ final class TemplateGenerator
 		}
 
 		foreach (array_reverse($this->macros[$name]) as $macro) {
-			$node = new Tag($macro, $name, $args, $modifiers, $this->macroNode, $this->htmlNode, $nPrefix);
+			$node = new Tag(
+				$name,
+				$args,
+				$modifiers,
+				line: $nPrefix ? $this->htmlNode->line : $this->getLine(),
+				parent: $this->macroNode,
+				htmlElement: $this->htmlNode,
+				prefix: $nPrefix,
+			);
+			$node->macro = $macro;
 			$node->context = $context;
-			$node->line = $nPrefix ? $this->htmlNode->line : $this->getLine();
 			if ($macro->nodeOpened($node) !== false) {
 				return $node;
 			}
 		}
 
 		throw new CompileException('Unknown ' . ($nPrefix
-			? 'attribute ' . TemplateLexer::NPrefix . ($nPrefix === Tag::PREFIX_NONE ? '' : "$nPrefix-") . $name
+			? 'attribute ' . TemplateLexer::NPrefix . ($nPrefix === Tag::PrefixNone ? '' : "$nPrefix-") . $name
 			: 'tag {' . $name . ($args ? " $args" : '') . '}'
 		));
 	}
