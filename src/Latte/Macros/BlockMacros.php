@@ -193,7 +193,7 @@ class BlockMacros extends MacroSet
 		if ($this->getCompiler()->isInHead()) {
 			$this->imports[] = $code;
 			return '';
-		} elseif ($tag->parentNode && $tag->parentNode->name === 'embed') {
+		} elseif ($tag->parent && $tag->parent->name === 'embed') {
 			return "} $code if (false) {";
 		} else {
 			return $code;
@@ -207,7 +207,7 @@ class BlockMacros extends MacroSet
 	public function macroExtends(Tag $tag, PhpWriter $writer): void
 	{
 		$tag->validate(true);
-		if ($tag->parentNode) {
+		if ($tag->parent) {
 			throw new CompileException($tag->getNotation() . ' must not be inside other tags.');
 		} elseif ($this->extends !== null) {
 			throw new CompileException('Multiple ' . $tag->getNotation() . ' declarations are not allowed.');
@@ -268,7 +268,7 @@ class BlockMacros extends MacroSet
 			throw new CompileException("Block name must start with letter a-z, '$data->name' given.");
 		}
 
-		$extendsCheck = $this->blocks[Template::LayerTop] || count($this->blocks) > 1 || $tag->parentNode;
+		$extendsCheck = $this->blocks[Template::LayerTop] || count($this->blocks) > 1 || $tag->parent;
 		$block = $this->addBlock($tag, $layer);
 
 		$data->after = function () use ($tag, $block) {
@@ -333,7 +333,7 @@ class BlockMacros extends MacroSet
 			}
 		}
 
-		$extendsCheck = $this->blocks[Template::LayerTop] || count($this->blocks) > 1 || $tag->parentNode;
+		$extendsCheck = $this->blocks[Template::LayerTop] || count($this->blocks) > 1 || $tag->parent;
 		$block = $this->addBlock($tag, $layer);
 		$block->hasParameters = (bool) $params;
 
@@ -386,10 +386,10 @@ class BlockMacros extends MacroSet
 		$data->name = (string) $tag->tokenizer->fetchWord();
 		$this->checkExtraArgs($tag);
 
-		if ($tag->prefix && isset($tag->htmlNode->attrs[$this->snippetAttribute])) {
+		if ($tag->isNAttribute() && isset($tag->htmlElement->attrs[$this->snippetAttribute])) {
 			throw new CompileException("Cannot combine HTML attribute {$this->snippetAttribute} with n:snippet.");
 
-		} elseif ($tag->prefix && isset($tag->htmlNode->macroAttrs['ifcontent'])) {
+		} elseif ($tag->isNAttribute() && isset($tag->htmlElement->macroAttrs['ifcontent'])) {
 			throw new CompileException('Cannot combine n:ifcontent with n:snippet.');
 
 		} elseif ($this->isDynamic($data->name)) {
@@ -399,14 +399,14 @@ class BlockMacros extends MacroSet
 			throw new CompileException("Snippet name must start with letter a-z, '$data->name' given.");
 		}
 
-		if ($tag->prefix && $tag->prefix !== $tag::PREFIX_NONE) {
+		if ($tag->isNAttribute() && $tag->prefix !== $tag::PrefixNone) {
 			trigger_error("Use n:snippet instead of {$tag->getNotation()}", E_USER_DEPRECATED);
 		}
 
 		$block = $this->addBlock($tag, Template::LayerSnippet);
 
 		$data->after = function () use ($tag, $writer, $data, $block) {
-			if ($tag->prefix === Tag::PREFIX_NONE) { // n:snippet -> n:inner-snippet
+			if ($tag->prefix === Tag::PrefixNone) { // n:snippet -> n:inner-snippet
 				$tag->content = $tag->innerContent;
 			}
 
@@ -420,14 +420,14 @@ class BlockMacros extends MacroSet
 
 			$this->extractMethod($tag, $block);
 
-			if ($tag->prefix === Tag::PREFIX_NONE) {
+			if ($tag->prefix === Tag::PrefixNone) {
 				$tag->innerContent = $tag->openingCode . $tag->content . $tag->closingCode;
 				$tag->closingCode = $tag->openingCode = '<?php ?>';
 			}
 		};
 
-		if ($tag->prefix) {
-			if (isset($tag->htmlNode->macroAttrs['foreach'])) {
+		if ($tag->isNAttribute()) {
+			if (isset($tag->htmlElement->macroAttrs['foreach'])) {
 				throw new CompileException('Combination of n:snippet with n:foreach is invalid, use n:inner-foreach.');
 			}
 
@@ -453,8 +453,8 @@ class BlockMacros extends MacroSet
 		$data = $tag->data;
 		$tag->closingCode = '<?php } finally { $this->global->snippetDriver->leave(); } ?>';
 
-		if ($tag->prefix) {
-			if ($tag->prefix === Tag::PREFIX_NONE) { // n:snippet -> n:inner-snippet
+		if ($tag->isNAttribute()) {
+			if ($tag->prefix === Tag::PrefixNone) { // n:snippet -> n:inner-snippet
 				$data->after = function () use ($tag) {
 					$tag->innerContent = $tag->openingCode . $tag->innerContent . $tag->closingCode;
 					$tag->closingCode = $tag->openingCode = '<?php ?>';

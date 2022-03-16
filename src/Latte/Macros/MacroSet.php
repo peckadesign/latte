@@ -72,7 +72,7 @@ abstract class MacroSet extends Latte\Extension
 	public function nodeOpened(Tag $node)
 	{
 		[$begin, $end, $attr] = $this->macros[$node->name];
-		$node->empty = !$end;
+		$node->void = !$end;
 
 		if (
 			$node->modifiers
@@ -92,8 +92,8 @@ abstract class MacroSet extends Latte\Extension
 			throw new CompileException('Arguments are not allowed in ' . $node->getNotation());
 		}
 
-		if ($attr && $node->prefix === $node::PREFIX_NONE) {
-			$node->empty = true;
+		if ($attr && $node->prefix === $node::PrefixNone) {
+			$node->void = true;
 			$node->context[1] = Latte\Context::HtmlAttribute;
 			$res = $this->compile($node, $attr);
 			if ($res === false) {
@@ -104,7 +104,7 @@ abstract class MacroSet extends Latte\Extension
 
 			$node->context[1] = Latte\Context::HtmlText;
 
-		} elseif ($node->empty && $node->prefix) {
+		} elseif ($node->void && $node->isNAttribute()) {
 			return false;
 
 		} elseif ($begin) {
