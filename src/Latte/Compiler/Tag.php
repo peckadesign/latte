@@ -52,10 +52,7 @@ final class Tag
 	public ?string $prefix = null;
 
 	/** position of start tag in source template */
-	public ?int $startLine = null;
-
-	/** position of end tag in source template */
-	public ?int $endLine = null;
+	public ?int $line = null;
 
 	/** @var array{string, bool}|null */
 	public ?array $saved = null;
