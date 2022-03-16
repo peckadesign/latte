@@ -195,7 +195,7 @@ class Compiler
 		}
 
 		if ($this->contentType !== Context::Html) {
-			$this->addConstant('CONTENT_TYPE', $this->contentType);
+			$this->addConstant('ContentType', $this->contentType);
 		}
 
 		$members = [];
