@@ -247,7 +247,7 @@ class BlockMacros extends MacroSet
 			return $writer->write("ob_start(fn() => '') %node.line; try {");
 		}
 
-		if (str_starts_with((string) $tag->context[1], Latte\Compiler\Compiler::CONTEXT_HTML_ATTRIBUTE)) {
+		if (str_starts_with((string) $tag->context[1], Latte\Context::HtmlAttribute)) {
 			$tag->context[1] = '';
 			$tag->modifiers .= '|escape';
 		} elseif ($tag->modifiers) {
