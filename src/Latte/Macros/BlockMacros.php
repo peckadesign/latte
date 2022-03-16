@@ -361,7 +361,7 @@ class BlockMacros extends MacroSet
 				$this->getCompiler()->expandTokens("extract(\$ʟ_args); unset(\$ʟ_args);\n?>{$tag->content}<?php"),
 				'array $ʟ_args',
 				'void',
-				"{{$tag->name} {$tag->args}} on line {$tag->startLine}",
+				"{{$tag->name} {$tag->args}} on line {$tag->line}",
 			);
 			$tag->content = '';
 		};
@@ -535,7 +535,7 @@ class BlockMacros extends MacroSet
 
 		$block = $this->blocks[$layer ?? $this->index][$data->name] = new Block;
 		$block->contentType = implode('', $tag->context);
-		$block->comment = "{{$tag->name} {$tag->args}} on line {$tag->startLine}";
+		$block->comment = "{{$tag->name} {$tag->args}} on line {$tag->line}";
 		return $block;
 	}
 
