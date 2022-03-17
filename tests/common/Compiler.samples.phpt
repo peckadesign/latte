@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Tester\Assert;
 
-
 require __DIR__ . '/../bootstrap.php';
 
 
@@ -15,24 +14,24 @@ Assert::match(
 	'%A%echo LR\Filters::escapeHtmlText(test(function () {
 			return 1;
 		}))%A%',
-	$latte->compile('{test(function () { return 1;})}')
+	$latte->compile('{test(function () { return 1;})}'),
 );
 
 Assert::match(
 	'%A%echo LR\Filters::escapeHtmlText(test(function () use ($a) {
 			return 1;
 		}))%A%',
-	$latte->compile('{test(function () use ($a) { return 1;})}')
+	$latte->compile('{test(function () use ($a) { return 1;})}'),
 );
 
 Assert::match(
 	'%A%echo LR\Filters::escapeHtmlText(test(fn () => 1))%A%',
-	$latte->compile('{test(fn () => 1)}')
+	$latte->compile('{test(fn () => 1)}'),
 );
 
 Assert::match(
 	"%A%('foo')/ **/('bar')%A%",
-	$latte->compile('{(foo)//**/**/(bar)}')
+	$latte->compile('{(foo)//**/**/(bar)}'),
 );
 
 Assert::match(
@@ -41,15 +40,15 @@ Assert::match(
 			echo 'xxx';
 		}
 %A%",
-	$latte->compile('{if 1}xxx{/}')
+	$latte->compile('{if 1}xxx{/}'),
 );
 
 Assert::match( // fix #58
 	'x',
-	$latte->renderToString('{contentType application/xml}{if true}x{/if}')
+	$latte->renderToString('{contentType application/xml}{if true}x{/if}'),
 );
 
 Assert::match(
 	'<a href=""></a>',
-	$latte->renderToString('<a href="{ifset $x}{$x}{/ifset}"></a>')
+	$latte->renderToString('<a href="{ifset $x}{$x}{/ifset}"></a>'),
 );
