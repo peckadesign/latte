@@ -79,7 +79,7 @@ class MacroTokens extends TokenIterator
 				$this->tokens,
 				$position ?? count($this->tokens),
 				0,
-				is_array($val) ? [$val] : $this->parse($val)
+				is_array($val) ? [$val] : $this->parse($val),
 			);
 		}
 
@@ -112,7 +112,7 @@ class MacroTokens extends TokenIterator
 		} else {
 			$start = $this->position;
 			$expr = $this->joinUntilSameDepth(self::T_WHITESPACE, ',');
-			if ($this->position > $start + 1 && strpos($expr, '$') !== false && strpos($expr, '->') === false) {
+			if ($this->position > $start + 1 && str_contains($expr, '$') && !str_contains($expr, '->')) {
 				trigger_error("The expression $expr should be put in double quotes.", E_USER_DEPRECATED);
 			}
 

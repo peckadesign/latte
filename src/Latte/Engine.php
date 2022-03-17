@@ -127,7 +127,14 @@ class Engine
 		}
 
 		$this->providers['fn'] = $this->functions;
-		return new $class($this, $params, $this->filters, $this->providers, $name, $this->sandboxed ? $this->policy : null);
+		return new $class(
+			$this,
+			$params,
+			$this->filters,
+			$this->providers,
+			$name,
+			$this->sandboxed ? $this->policy : null,
+		);
 	}
 
 
@@ -281,7 +288,12 @@ class Engine
 
 	public function getTemplateClass(string $name): string
 	{
-		$key = serialize([$this->getLoader()->getUniqueId($name), self::VERSION, array_keys((array) $this->functions), $this->sandboxed]);
+		$key = serialize([
+			$this->getLoader()->getUniqueId($name),
+			self::VERSION,
+			array_keys((array) $this->functions),
+			$this->sandboxed,
+		]);
 		return 'Template' . substr(md5($key), 0, 10);
 	}
 
@@ -545,6 +557,6 @@ class Engine
 			}
 		}
 
-		return array_filter((array) $params, function ($key) { return $key[0] !== "\0"; }, ARRAY_FILTER_USE_KEY);
+		return array_filter((array) $params, fn($key) => $key[0] !== "\0", ARRAY_FILTER_USE_KEY);
 	}
 }

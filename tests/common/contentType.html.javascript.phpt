@@ -8,7 +8,6 @@ declare(strict_types=1);
 
 use Tester\Assert;
 
-
 require __DIR__ . '/../bootstrap.php';
 
 
@@ -17,27 +16,27 @@ $latte->setLoader(new Latte\Loaders\StringLoader);
 
 Assert::match(
 	'<script>"<>"',
-	$latte->renderToString('<script>{="<>"}')
+	$latte->renderToString('<script>{="<>"}'),
 );
 
 Assert::match(
 	'<script>"<\/" "]]\u003E" "\u003C!"',
-	$latte->renderToString('<script>{="</"} {="]]>"} {="<!"}')
+	$latte->renderToString('<script>{="</"} {="]]>"} {="<!"}'),
 );
 
 Assert::match(
 	'<script></script>&lt;&gt;',
-	$latte->renderToString('<script></script>{="<>"}')
+	$latte->renderToString('<script></script>{="<>"}'),
 );
 
 Assert::match(
 	'<script>123',
-	$latte->renderToString('<script>{=123}')
+	$latte->renderToString('<script>{=123}'),
 );
 
 Assert::match(
 	'<script>[1,2,3]',
-	$latte->renderToString('<script>{=[1,2,3]}')
+	$latte->renderToString('<script>{=[1,2,3]}'),
 );
 
 Assert::exception(function () use ($latte) {
@@ -46,7 +45,7 @@ Assert::exception(function () use ($latte) {
 
 Assert::match(
 	'<script id="&lt;&gt;">',
-	$latte->renderToString('<script id="{="<>"}">')
+	$latte->renderToString('<script id="{="<>"}">'),
 );
 
 Assert::exception(function () use ($latte) {
@@ -59,27 +58,27 @@ Assert::exception(function () use ($latte) {
 
 Assert::match(
 	'<script type="TEXT/X-JAVASCRIPT">"<>"',
-	$latte->renderToString('<script type="TEXT/X-JAVASCRIPT">{="<>"}')
+	$latte->renderToString('<script type="TEXT/X-JAVASCRIPT">{="<>"}'),
 );
 
 Assert::match(
 	'<script type="module">"<>"',
-	$latte->renderToString('<script type="module">{="<>"}')
+	$latte->renderToString('<script type="module">{="<>"}'),
 );
 
 Assert::match(
 	'<script type="text/plain">"<>"',
-	$latte->renderToString('<script type="text/plain">{="<>"}')
+	$latte->renderToString('<script type="text/plain">{="<>"}'),
 );
 
 Assert::match(
 	'<script type="application/json">{ foo:"<>" }',
-	$latte->renderToString('<script type="application/json">{ foo:{="<>"} }')
+	$latte->renderToString('<script type="application/json">{ foo:{="<>"} }'),
 );
 
 Assert::match(
 	'<script type="text/html">&lt;&gt;',
-	$latte->renderToString('<script type="text/html">{="<>"}')
+	$latte->renderToString('<script type="text/html">{="<>"}'),
 );
 
 // content of <script> is RAWTEXT
@@ -97,7 +96,7 @@ Assert::match(
 	<div n:foreach="[a, b] as $i">{$i}</div>
 	</script>
 	<div n:foreach="[a, b] as $i">{$i}</div>
-')
+'),
 );
 
 // content of <script> changed to html
@@ -117,11 +116,11 @@ Assert::match(
 	<div n:foreach="[a, b] as $i">{$i}</div>
 	</script>
 	<div n:foreach="[a, b] as $i">{$i}</div>
-')
+'),
 );
 
 // trim inside <script>
 Assert::match(
 	'<script>123;</script>',
-	$latte->renderToString('<script>{block|trim}  123;  {/block}</script>')
+	$latte->renderToString('<script>{block|trim}  123;  {/block}</script>'),
 );
