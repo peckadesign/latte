@@ -47,4 +47,10 @@ class ImportNode extends StatementNode
 		}
 		return $code;
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		yield $this->file;
+	}
 }

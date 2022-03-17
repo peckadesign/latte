@@ -34,7 +34,7 @@ $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => iterator_to_array($lexer->tokenize("{var \n'abc}"), false),
 	Latte\CompileException::class,
-	'Malformed tag contents.',
+	'Unterminated string (on line 2 at column 1)',
 );
 
 

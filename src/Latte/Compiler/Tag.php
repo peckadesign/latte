@@ -30,11 +30,13 @@ final class Tag
 	public MacroTokens $tokenizer;
 	public \stdClass $data;
 	public ?string $modifiers = null;
+	public string $args = '';
+	public TagParser $parser;
 
 
 	public function __construct(
 		public /*readonly*/ string $name,
-		public /*readonly*/ string $args,
+		array $tokens = [],
 		public /*readonly*/ bool $void = false,
 		public /*readonly*/ bool $closing = false,
 		public /*readonly*/ ?int $line = null,
@@ -45,8 +47,14 @@ final class Tag
 		public /*readonly*/ ?string $indentation = null,
 		public /*readonly*/ bool $newline = false,
 	) {
-		$this->data = new \stdClass;
+		$args = '';
+		foreach ($tokens as $token) {
+			$args .= $token->text;
+		}
+
 		$this->setArgs($args);
+		$this->data = new \stdClass;
+		$this->parser = new TagParser($tokens);
 	}
 
 

@@ -46,7 +46,7 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<p title=""</p>'),
 	'Latte\CompileException',
-	"Unexpected '</p>' (at column 12)",
+	'Unexpected </p> (at column 12)',
 );
 
 Assert::exception(
@@ -148,7 +148,7 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('{=`whoami`}'),
 	Latte\CompileException::class,
-	'Backtick operator is forbidden in Latte.',
+	"Unexpected '`' (at column 3)",
 );
 
 Assert::exception(function () use ($latte) {

@@ -17,6 +17,12 @@ abstract class Node implements \IteratorAggregate
 	public ?int $line = null;
 
 
+	public function __construct(?int $line = null)
+	{
+		$this->line = $line;
+	}
+
+
 	abstract public function print(PrintContext $context): string;
 
 

@@ -53,4 +53,12 @@ class ExtendsNode extends StatementNode
 			: '$this->parentName = false;');
 		return '';
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		if ($this->extends) {
+			yield $this->extends;
+		}
+	}
 }

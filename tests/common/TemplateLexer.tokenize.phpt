@@ -32,7 +32,7 @@ Assert::same([
 	[Token::Html_BogusOpen, '<?', '1:1'],
 	[Token::Text, 'xml encoding="', '1:3'],
 	[Token::Latte_TagOpen, '{', '1:17'],
-	[Token::Latte_Args, '$enc', '1:18'],
+	[Token::Php_Variable, '$enc', '1:18'],
 	[Token::Latte_TagClose, '}', '1:22'],
 	[Token::Text, '" ?', '1:23'],
 	[Token::Html_TagClose, '>', '1:26'],

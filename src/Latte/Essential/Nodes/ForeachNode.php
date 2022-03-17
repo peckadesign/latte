@@ -115,6 +115,9 @@ class ForeachNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
+		if ($this->args) {
+			yield $this->args;
+		}
 		yield $this->content;
 		if ($this->else) {
 			yield $this->else;

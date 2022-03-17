@@ -15,7 +15,7 @@ use Latte\Strict;
 
 /**
  * TokenStream loads tokens from $source iterator on-demand, and places them in a buffer to provide access
- * to any previous token by index.
+ * to any previous token by index. It also filters hidden tokens.
  */
 final class TokenStream
 {
@@ -26,11 +26,13 @@ final class TokenStream
 	private int $index = 0;
 	private bool $end = false;
 	private \Iterator $source;
+	private array $hidden;
 
 
-	public function __construct(\Iterator $source)
+	public function __construct(\Iterator $source, array $hidden = [])
 	{
 		$this->source = $source;
+		$this->hidden = array_flip($hidden);
 	}
 
 
@@ -39,7 +41,13 @@ final class TokenStream
 	 */
 	public function current(): ?Token
 	{
-		return $this->peek(0);
+		do {
+			$token = $this->peek(0);
+			if (!isset($this->hidden[$token?->type])) {
+				return $token;
+			}
+			$this->index++;
+		} while (true);
 	}
 
 
@@ -54,6 +62,7 @@ final class TokenStream
 
 	/**
 	 * Gets the token at $offset from the current position.
+	 * This function does not take into account $hidden tokens.
 	 */
 	public function peek(int $offset): ?Token
 	{
