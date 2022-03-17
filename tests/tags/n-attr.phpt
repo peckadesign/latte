@@ -37,8 +37,7 @@ Assert::match(
 				echo '> </p>
 		';
 		%A%
-		XX
-,
+		XX,
 	$latte->compile($template),
 );
 
@@ -48,8 +47,7 @@ Assert::match(
 		<p title="hello"> </p>
 
 		<p title="hello"> </p>
-		XX
-,
+		XX,
 	$latte->renderToString($template),
 );
 
