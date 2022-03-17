@@ -123,4 +123,13 @@ class IncludeBlockNode extends StatementNode
 	{
 		return self::OutputBlock;
 	}
+
+
+	public function &getIterator(): \Generator
+	{
+		if ($this->from) {
+			yield $this->from;
+		}
+		yield $this->args;
+	}
 }

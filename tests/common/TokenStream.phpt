@@ -180,3 +180,37 @@ test('generator is read continually', function () {
 		'Generator',
 	);
 });
+
+
+test('hidden & current', function () {
+	$tokens = [
+		new Token(Token::Equals, '='),
+		new Token(Token::Text, 'a'),
+		new Token(Token::Whitespace, 'xx'),
+		new Token(Token::Text, 'c'),
+	];
+	$stream = new TokenStream(new ArrayIterator($tokens), [Token::Equals, Token::Whitespace]);
+
+	Assert::same(0, $stream->getIndex());
+	Assert::same($tokens[1], $stream->current());
+	Assert::same(1, $stream->getIndex());
+	$stream->consume();
+	Assert::same(2, $stream->getIndex());
+	Assert::same($tokens[3], $stream->current());
+	Assert::same(3, $stream->getIndex());
+});
+
+
+test('hidden & peek', function () {
+	$tokens = [
+		new Token(Token::Equals, '='),
+		new Token(Token::Text, 'a'),
+		new Token(Token::Whitespace, 'xx'),
+		new Token(Token::Text, 'c'),
+	];
+	$stream = new TokenStream(new ArrayIterator($tokens), [Token::Equals, Token::Whitespace]);
+
+	Assert::same($tokens[0], $stream->peek(0));
+	Assert::same($tokens[2], $stream->peek(2));
+	Assert::same(0, $stream->getIndex());
+});
