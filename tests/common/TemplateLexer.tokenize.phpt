@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Test: Latte\Parser::parse()
- */
-
 declare(strict_types=1);
 
 use Latte\Compiler\LegacyToken;
@@ -14,10 +10,10 @@ require __DIR__ . '/../bootstrap.php';
 
 function parse($s)
 {
-	$parser = new Latte\Compiler\Parser;
+	$lexer = new Latte\Compiler\TemplateLexer;
 	return array_map(
 		fn(LegacyToken $token) => array_filter([$token->type, $token->text, $token->name ?? null, $token->value ?? null]),
-		$parser->parse($s),
+		$lexer->tokenize($s),
 	);
 }
 
