@@ -5,7 +5,6 @@ declare(strict_types=1);
 use Latte\Compiler\TemplateLexer;
 use Tester\Assert;
 
-
 require __DIR__ . '/../bootstrap.php';
 
 
@@ -27,7 +26,7 @@ $lexer = new TemplateLexer;
 $e = Assert::exception(
 	fn() => $lexer->tokenize("žluťoučký\n\xA0\xA0"),
 	Latte\CompileException::class,
-	'Template is not valid UTF-8 stream (on line 2)',
+	'Template is not valid UTF-8 stream (on line 2 at column 1)',
 );
 
 
@@ -51,7 +50,7 @@ $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => $lexer->tokenize('{'),
 	Latte\CompileException::class,
-	'Malformed tag.',
+	'Malformed tag contents.',
 );
 
 
@@ -59,7 +58,7 @@ $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => $lexer->tokenize("\n{"),
 	Latte\CompileException::class,
-	'Malformed tag (on line 2)',
+	'Malformed tag contents (on line 2)',
 );
 
 
@@ -67,5 +66,5 @@ $lexer = new TemplateLexer;
 Assert::exception(
 	fn() => $lexer->tokenize("a\x00\x1F\x7Fb"),
 	Latte\CompileException::class,
-	'Template contains control character \x0',
+	'Template contains control character \x0 (at column 1)',
 );

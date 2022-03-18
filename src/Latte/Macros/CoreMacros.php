@@ -644,12 +644,12 @@ class CoreMacros extends MacroSet
 		?>', $tag->htmlNode->data->id, $tag->htmlNode->name);
 
 		$tag->content = preg_replace(
-			'~^(\s*<)' . Latte\Compiler\TemplateLexer::RE_TAG_NAME . '~',
+			'~^(\s*<)' . Latte\Compiler\TemplateLexer::ReTagName . '~',
 			"\$1<?php echo \$ʟ_tag[{$tag->htmlNode->data->id}]; ?>\n",
 			$tag->content,
 		);
 		$tag->content = preg_replace(
-			'~</' . Latte\Compiler\TemplateLexer::RE_TAG_NAME . '(\s*>\s*)$~',
+			'~</' . Latte\Compiler\TemplateLexer::ReTagName . '(\s*>\s*)$~',
 			"</<?php echo \$ʟ_tag[{$tag->htmlNode->data->id}]; ?>\n\$1",
 			$tag->content,
 		);

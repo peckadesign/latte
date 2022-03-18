@@ -88,7 +88,7 @@ final class Tag
 	public function getNotation(): string
 	{
 		return $this->prefix
-			? TemplateLexer::N_PREFIX . ($this->prefix === self::PREFIX_NONE ? '' : $this->prefix . '-') . $this->name
+			? TemplateLexer::NPrefix . ($this->prefix === self::PREFIX_NONE ? '' : $this->prefix . '-') . $this->name
 			: '{' . $this->name . '}';
 	}
 
