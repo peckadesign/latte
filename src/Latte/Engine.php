@@ -124,7 +124,7 @@ class Engine
 		}
 
 		$lexer = $this->createLexer();
-		$compiler = $this->createCompiler();
+		$compiler = $this->createGenerator();
 
 		Macros\CoreMacros::install($compiler);
 		Macros\BlockMacros::install($compiler);
@@ -456,9 +456,9 @@ class Engine
 	}
 
 
-	protected function createCompiler(): Compiler\Compiler
+	protected function createGenerator(): Compiler\TemplateGenerator
 	{
-		return new Compiler\Compiler;
+		return new Compiler\TemplateGenerator;
 	}
 
 
