@@ -491,8 +491,8 @@ class Compiler
 
 	private function processHtmlAttributeBegin(LegacyToken $token): void
 	{
-		if (str_starts_with($token->name, TemplateLexer::N_PREFIX)) {
-			$name = substr($token->name, strlen(TemplateLexer::N_PREFIX));
+		if (str_starts_with($token->name, TemplateLexer::NPrefix)) {
+			$name = substr($token->name, strlen(TemplateLexer::NPrefix));
 			if (isset($this->htmlNode->macroAttrs[$name])) {
 				throw new CompileException("Found multiple attributes {$token->name}.");
 
@@ -613,7 +613,7 @@ class Compiler
 			|| $nPrefix !== $node->prefix
 		) {
 			$name = $nPrefix
-				? "</{$this->htmlNode->name}> for " . TemplateLexer::N_PREFIX . implode(' and ' . TemplateLexer::N_PREFIX, array_keys($this->htmlNode->macroAttrs))
+				? "</{$this->htmlNode->name}> for " . TemplateLexer::NPrefix . implode(' and ' . TemplateLexer::NPrefix, array_keys($this->htmlNode->macroAttrs))
 				: '{/' . $name . ($args ? ' ' . $args : '') . $modifiers . '}';
 			throw new CompileException("Unexpected $name" . ($node ? ', expecting ' . self::printEndTag($node->prefix ? $this->htmlNode : $node) : ''));
 		}
@@ -762,9 +762,9 @@ class Compiler
 
 		if ($attrs) {
 			throw new CompileException(
-				'Unknown attribute ' . TemplateLexer::N_PREFIX
-				. implode(' and ' . TemplateLexer::N_PREFIX, array_keys($attrs))
-				. (($t = Helpers::getSuggestion(array_keys($this->macros), key($attrs))) ? ', did you mean ' . TemplateLexer::N_PREFIX . $t . '?' : ''),
+				'Unknown attribute ' . TemplateLexer::NPrefix
+				. implode(' and ' . TemplateLexer::NPrefix, array_keys($attrs))
+				. (($t = Helpers::getSuggestion(array_keys($this->macros), key($attrs))) ? ', did you mean ' . TemplateLexer::NPrefix . $t . '?' : ''),
 			);
 		}
 
@@ -840,7 +840,7 @@ class Compiler
 		}
 
 		throw new CompileException('Unknown ' . ($nPrefix
-			? 'attribute ' . TemplateLexer::N_PREFIX . ($nPrefix === Tag::PREFIX_NONE ? '' : "$nPrefix-") . $name
+			? 'attribute ' . TemplateLexer::NPrefix . ($nPrefix === Tag::PREFIX_NONE ? '' : "$nPrefix-") . $name
 			: 'tag {' . $name . ($args ? " $args" : '') . '}'
 		));
 	}
@@ -849,7 +849,7 @@ class Compiler
 	private static function printEndTag(HtmlNode|Tag $node): string
 	{
 		return $node instanceof HtmlNode
-			? "</{$node->name}> for " . TemplateLexer::N_PREFIX . implode(' and ' . TemplateLexer::N_PREFIX, array_keys($node->macroAttrs))
+			? "</{$node->name}> for " . TemplateLexer::NPrefix . implode(' and ' . TemplateLexer::NPrefix, array_keys($node->macroAttrs))
 			: "{/{$node->name}}";
 	}
 }
