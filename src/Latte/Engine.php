@@ -29,14 +29,12 @@ class Engine
 		CONTENT_ICAL = 'ical',
 		CONTENT_TEXT = 'text';
 
-	/** @var callable[] */
+	/** @deprecated and unused */
 	public $onCompile = [];
 
 	/** @internal */
 	public $probe;
 
-	private ?Compiler\Parser $parser = null;
-	private ?Compiler\Compiler $compiler = null;
 	private ?Loader $loader = null;
 	private Runtime\FilterExecutor $filters;
 	private \stdClass $functions;
@@ -44,6 +42,8 @@ class Engine
 	/** @var mixed[] */
 	private array $providers = [];
 
+	/** @var Extension[] */
+	private array $extensions = [];
 	private string $contentType = self::CONTENT_HTML;
 	private ?string $tempDirectory = null;
 	private bool $autoRefresh = true;
@@ -127,21 +127,21 @@ class Engine
 			throw new \LogicException('In sandboxed mode you need to set a security policy.');
 		}
 
-		foreach ($this->onCompile ?: [] as $cb) {
-			(Helpers::checkCallback($cb))($this);
-		}
+		$parser = $this->createParser();
+		$compiler = $this->createCompiler();
 
-		$this->onCompile = [];
+		Macros\CoreMacros::install($compiler);
+		Macros\BlockMacros::install($compiler);
 
 		$source = $this->getLoader()->getContent($name);
 		$comment = preg_match('#\n|\?#', $name) ? null : "source: $name";
 
 		try {
-			$tokens = $this->getParser()
+			$tokens = $parser
 				->setContentType($this->contentType)
 				->parse($source);
 
-			$code = $this->getCompiler()
+			$code = $compiler
 				->setContentType($this->contentType)
 				->setFunctions(array_keys((array) $this->functions))
 				->setPolicy($this->sandboxed ? $this->policy : null)
@@ -153,8 +153,8 @@ class Engine
 			}
 
 			$line = isset($tokens)
-				? $this->getCompiler()->getLine()
-				: $this->getParser()->getLine();
+				? $compiler->getLine()
+				: $parser->getLine();
 			throw $e->setSource($source, $line, $name);
 		}
 
@@ -329,9 +329,9 @@ class Engine
 	/**
 	 * Adds new extension.
 	 */
-	public function addExtension(string $name, Extension $extension): static
+	public function addExtension(Extension $extension): static
 	{
-		$this->getCompiler()->addMacro($name, $extension);
+		$this->extensions[] = $extension;
 		return $this;
 	}
 
@@ -449,25 +449,15 @@ class Engine
 	}
 
 
-	public function getParser(): Compiler\Parser
+	protected function createParser(): Compiler\Parser
 	{
-		if (!$this->parser) {
-			$this->parser = new Compiler\Parser;
-		}
-
-		return $this->parser;
+		return new Compiler\Parser;
 	}
 
 
-	public function getCompiler(): Compiler\Compiler
+	protected function createCompiler(): Compiler\Compiler
 	{
-		if (!$this->compiler) {
-			$this->compiler = new Compiler\Compiler;
-			Macros\CoreMacros::install($this->compiler);
-			Macros\BlockMacros::install($this->compiler);
-		}
-
-		return $this->compiler;
+		return new Compiler\Compiler;
 	}
 
 
