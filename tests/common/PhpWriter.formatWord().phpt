@@ -48,6 +48,8 @@ Assert::same('(($expr ? (1+2) : [3,4]))', $writer->formatWord('($expr ? (1+2) : 
 Assert::same('($expr ? (1+2) : [3,4])', $writer->formatWord('$expr ? (1+2) : [3,4]'));
 Assert::same('(fnc() ? (1+2) : [3,4])', $writer->formatWord('fnc() ? (1+2) : [3,4]'));
 
-Assert::exception(function () use ($writer) {
-	$writer->formatWord("'var\"");
-}, Latte\CompileException::class, "Unexpected ''var\"' on line 1, column 1.");
+Assert::exception(
+	fn() => $writer->formatWord("'var\""),
+	Latte\CompileException::class,
+	"Unexpected ''var\"' on line 1, column 1.",
+);
