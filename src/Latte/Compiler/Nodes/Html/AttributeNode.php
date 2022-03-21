@@ -18,9 +18,7 @@ class AttributeNode extends ContentNode
 {
 	public function __construct(
 		public string $name,
-		public string $text,
 		public ?Node $value = null,
-		public ?string $quote = null,
 		public ?int $line = null,
 	) {
 	}
@@ -28,8 +26,9 @@ class AttributeNode extends ContentNode
 
 	public function print(PrintContext $context): string
 	{
-		$res = 'echo ' . var_export($this->text, true) . ';';
+		$res = 'echo ' . var_export($this->name, true) . ';';
 		if ($this->value) {
+			$res .= "echo '=';";
 			$res .= $this->value->print($context);
 		}
 		return $res;

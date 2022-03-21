@@ -25,8 +25,6 @@ $template = <<<'EOD'
 
 	<span title={if true}{$x} {$x}{else}"item"{/if}></span>
 
-	<span {='title'}={$x}></span>
-
 	EOD;
 
 Assert::matchFile(

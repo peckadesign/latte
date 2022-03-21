@@ -43,12 +43,6 @@ final class Template%a% extends Latte\Runtime\Template
 			echo '"item"';
 		}
 		echo '></span>
-
-<span ';
-		echo LR\Filters::escapeHtmlAttrUnquoted('title') /* line %d% */;
-		echo '=';
-		echo LR\Filters::escapeHtmlAttrUnquoted($x) /* line %d% */;
-		echo '></span>
 %A%
 	}
 

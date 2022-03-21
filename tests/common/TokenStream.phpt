@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use Latte\CompileException;
-use Latte\Compiler\LegacyToken;
+use Latte\Compiler\Token;
 use Latte\Compiler\TokenStream;
 use Tester\Assert;
 
@@ -21,7 +21,7 @@ test('empty', function () {
 
 
 test('current()', function () {
-	$token = new LegacyToken;
+	$token = new Token(0, '');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->current());
@@ -31,16 +31,14 @@ test('current()', function () {
 
 
 test('is()', function () {
-	$token = new LegacyToken;
-	$token->text = 'foo';
-	$token->type = LegacyToken::TEXT;
+	$token = new Token(Token::Text, 'foo');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::false($stream->is());
 	Assert::true($stream->is('foo'));
 	Assert::false($stream->is(''));
 	Assert::true($stream->is('', 'foo'));
-	Assert::true($stream->is(LegacyToken::TEXT));
+	Assert::true($stream->is(Token::Text));
 
 	Assert::same($token, $stream->tryConsume());
 	Assert::false($stream->is('foo'));
@@ -48,8 +46,8 @@ test('is()', function () {
 
 
 test('peek()', function () {
-	$token1 = new LegacyToken;
-	$token2 = new LegacyToken;
+	$token1 = new Token(0, '');
+	$token2 = new Token(0, '');
 	$stream = new TokenStream(new ArrayIterator([$token1, $token2]));
 
 	Assert::null($stream->peek(-1));
@@ -74,9 +72,9 @@ test('peek()', function () {
 
 
 test('peek() jump forward', function () {
-	$token1 = new LegacyToken;
-	$token2 = new LegacyToken;
-	$token3 = new LegacyToken;
+	$token1 = new Token(0, '');
+	$token2 = new Token(0, '');
+	$token3 = new Token(0, '');
 	$stream = new TokenStream(new ArrayIterator([$token1, $token2, $token3]));
 
 	Assert::same($token3, $stream->peek(2));
@@ -84,8 +82,7 @@ test('peek() jump forward', function () {
 
 
 test('consume() any token', function () {
-	$token = new LegacyToken;
-	$token->line = 123;
+	$token = new Token(0, '', 123);
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->consume());
@@ -100,9 +97,7 @@ test('consume() any token', function () {
 
 
 test('consume() kind of token', function () {
-	$token = new LegacyToken;
-	$token->text = 'foo';
-	$token->type = LegacyToken::TEXT;
+	$token = new Token(Token::Text, 'foo');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::exception(
@@ -117,7 +112,7 @@ test('consume() kind of token', function () {
 
 
 test('tryConsume() any token', function () {
-	$token = new LegacyToken;
+	$token = new Token(0, '');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->tryConsume());
@@ -128,9 +123,7 @@ test('tryConsume() any token', function () {
 
 
 test('tryConsume() kind of token', function () {
-	$token = new LegacyToken;
-	$token->text = 'foo';
-	$token->type = LegacyToken::TEXT;
+	$token = new Token(Token::Text, 'foo');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::null($stream->tryConsume('bar'));
@@ -141,7 +134,7 @@ test('tryConsume() kind of token', function () {
 
 
 test('seek()', function () {
-	$token = new LegacyToken;
+	$token = new Token(0, '');
 	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::noError(fn() => $stream->seek(0));
@@ -176,7 +169,7 @@ test('generator is read on the first usage', function () {
 
 test('generator is read continually', function () {
 	$generator = function () {
-		yield new LegacyToken;
+		yield new Token(0, '');
 		throw new Exception('Generator');
 	};
 	$stream = new TokenStream($generator());

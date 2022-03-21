@@ -86,6 +86,7 @@ class Helpers
 
 		return match (true) {
 			$node instanceof Nodes\TextNode => $node->content,
+			$node instanceof Nodes\Html\QuotedValue => self::nodeToString($node->value),
 			default => null,
 		};
 	}
