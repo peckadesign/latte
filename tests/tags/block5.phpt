@@ -14,7 +14,6 @@ require __DIR__ . '/../bootstrap.php';
 $latte = new Latte\Engine;
 $latte->setLoader(new Latte\Loaders\StringLoader);
 
-// code optimization in BlockMacros vs. variables in placeholders
 Assert::match(
 	'<br class="123">',
 	$latte->renderToString('{block test}<br n:class="$var">{/block}', ['var' => 123]),

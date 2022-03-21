@@ -28,12 +28,12 @@ Assert::match(
 				echo '
 		<p';
 				$ʟ_tmp = ['title' => 'hello', 'lang' => isset($lang) ? $lang : null];
-				echo LR\Filters::htmlAttributes(isset($ʟ_tmp[0]) && is_array($ʟ_tmp[0]) ? $ʟ_tmp[0] : $ʟ_tmp) /* line 2 */;
+				echo Latte\Essential\Tags\NAttrAttribute::print(isset($ʟ_tmp[0]) && is_array($ʟ_tmp[0]) ? $ʟ_tmp[0] : $ʟ_tmp) /* line 2 */;
 				echo '> </p>
 
 		<p';
 				$ʟ_tmp = [['title' => 'hello']];
-				echo LR\Filters::htmlAttributes(isset($ʟ_tmp[0]) && is_array($ʟ_tmp[0]) ? $ʟ_tmp[0] : $ʟ_tmp) /* line 4 */;
+				echo Latte\Essential\Tags\NAttrAttribute::print(isset($ʟ_tmp[0]) && is_array($ʟ_tmp[0]) ? $ʟ_tmp[0] : $ʟ_tmp) /* line 4 */;
 				echo '> </p>
 		';
 		%A%
@@ -62,5 +62,5 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<div n:inner-attr/>'),
 	Latte\CompileException::class,
-	'Unknown attribute n:inner-attr',
+	'Unexpected attribute n:inner-attr, did you mean n:inner-try?',
 );

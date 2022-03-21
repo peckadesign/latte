@@ -66,6 +66,7 @@ final class TokenStream
 	{
 		$token = $this->current();
 		if (!$token || ($kind && !$token->is(...$kind))) {
+			$kind = array_map(fn($item) => is_string($item) ? "'$item'" : $item, $kind);
 			$this->throwUnexpectedException($kind);
 		}
 		$this->index++;

@@ -58,6 +58,7 @@ class Engine
 		$this->functions = new \stdClass;
 		$this->probe = function () {};
 		$this->addExtension(new Essential\Extension);
+		$this->addExtension(new Sandbox\Extension);
 	}
 
 
@@ -127,10 +128,14 @@ class Engine
 		$parser = $this->createParser();
 		$context = new Compiler\PrintContext;
 		$generator = $this->createGenerator();
+		$passes = [];
 
 		foreach ($this->extensions as $extension) {
-			$extension->beforeCompile();
+			$extension->beforeCompile($this);
 			$parser->addTags($extension->getTags());
+			foreach ($extension->getPasses() as $priority => $pass) {
+				$passes[] = [$pass, $priority];
+			}
 		}
 
 		$source = $this->getLoader()->getContent($name);
@@ -143,6 +148,14 @@ class Engine
 				->parse($source, $lexer);
 
 			$context->setContentType($parser->getContentType());
+			$context->policy = $this->sandboxed ? $this->policy : null;
+			$context->functions = (array) $this->functions;
+
+			usort($passes, fn($a, $b) => $a[1] <=> $b[1]);
+			foreach ($passes as [$pass]) {
+				$node = $pass($node, $context) ?? $node;
+			}
+
 			$code = $generator->generate(
 				$context,
 				$node,

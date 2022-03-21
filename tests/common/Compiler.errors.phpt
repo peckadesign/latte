@@ -17,7 +17,7 @@ $latte->setLoader(new Latte\Loaders\StringLoader);
 Assert::exception(
 	fn() => $latte->compile('Block{/block}'),
 	Latte\CompileException::class,
-	'Unexpected {/block}',
+	"Unexpected '{/block}'",
 );
 
 Assert::exception(
@@ -152,13 +152,13 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<p n:foreach=1><span n:if=1></i>'),
 	Latte\CompileException::class,
-	'Unexpected </i>, expecting </span> for element started on line 1',
+	"Unexpected '</i>', expecting </span> for element started on line 1",
 );
 
 Assert::exception(
 	fn() => $latte->compile('{/if}'),
 	Latte\CompileException::class,
-	'Unexpected {/if}',
+	"Unexpected '{/if}'",
 );
 
 Assert::exception(
@@ -182,20 +182,20 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<span n:if=1 n:foreach=2>{/foreach}'),
 	Latte\CompileException::class,
-	'Unexpected {/foreach}, expecting </span> for element started on line 1',
+	"Unexpected '{/foreach}', expecting </span> for element started on line 1",
 );
 
 Assert::exception(
 	fn() => $latte->compile('<span n:if=1 n:foreach=2>{/if}'),
 	Latte\CompileException::class,
-	'Unexpected {/if}, expecting </span> for element started on line 1',
+	"Unexpected '{/if}', expecting </span> for element started on line 1",
 );
 
 Assert::exception(
 	fn() => $latte->compile(<<<'XX'
-			{foreach [] as $item}
-				<li><a n:tag-if="$iterator->odd"></li>
-			{/foreach}
+				{foreach [] as $item}
+					<li><a n:tag-if="$iterator->odd"></li>
+				{/foreach}
 		XX),
 	Latte\CompileException::class,
 	"Unexpected '</li>', expecting </a> for element started on line 2 (on line 2)",
