@@ -39,11 +39,9 @@ Assert::exception(
 
 
 $lexer = new TemplateLexer;
-Assert::exception(
-	fn() => iterator_to_array($lexer->tokenize("\n{* \n'abc}"), false),
-	Latte\CompileException::class,
-	'Malformed tag contents (on line 2)',
-);
+Assert::exception(function () use (&$lexer) {
+	return iterator_to_array($lexer->tokenize("\n{* \n'abc}"), false);
+}, Latte\CompileException::class, 'Malformed comment contents (on line 2)');
 
 
 $lexer = new TemplateLexer;
