@@ -10,7 +10,7 @@ declare(strict_types=1);
 namespace Latte\Compiler;
 
 use Latte\CompileException;
-use Latte\Extension;
+use Latte\Compiler\Nodes\Html\ElementNode;
 use Latte\Strict;
 
 
@@ -24,23 +24,10 @@ final class Tag
 	public const
 		PrefixInner = 'inner',
 		PrefixTag = 'tag',
-		PrefixNone = 'none';
+		PrefixNone = '';
 
-	public Extension $macro;
-	public ?bool $replaced = null;
 	public MacroTokens $tokenizer;
-	public ?string $openingCode = null;
-	public ?string $closingCode = null;
-	public ?string $attrCode = null;
-	public ?string $content = null;
-	public string $innerContent = '';
 	public \stdClass $data;
-
-	/** @var array{string, mixed} [contentType, context] */
-	public ?array $context = null;
-
-	/** @var array{string, bool}|null */
-	public ?array $saved = null;
 
 
 	public function __construct(
@@ -51,7 +38,7 @@ final class Tag
 		public /*readonly*/ bool $closing = false,
 		public /*readonly*/ ?int $line = null,
 		public /*readonly*/ int $location = 0,
-		public /*readonly*/ ?HtmlNode $htmlElement = null,
+		public /*readonly*/ ?ElementNode $htmlElement = null,
 		public /*readonly*/ ?self $parent = null,
 		public /*readonly*/ ?string $prefix = null,
 		public /*readonly*/ ?string $indentation = null,
@@ -59,6 +46,18 @@ final class Tag
 	) {
 		$this->data = new \stdClass;
 		$this->setArgs($args);
+	}
+
+
+	public function isInHead(): bool
+	{
+		return $this->location === TemplateParser::LocationHead && !$this->parent;
+	}
+
+
+	public function isInText(): bool
+	{
+		return $this->location <= TemplateParser::LocationText;
 	}
 
 
@@ -70,16 +69,23 @@ final class Tag
 
 	public function setArgs(string $args): void
 	{
-		$this->args = $args;
-		$this->tokenizer = new MacroTokens($args);
+		$this->args = trim($args);
+		$this->tokenizer = new MacroTokens($this->args);
 	}
 
 
-	public function getNotation(): string
+	public function getNotation(bool $withArgs = false): string
 	{
+		$args = $withArgs ? $this->args : '';
 		return $this->isNAttribute()
-			? TemplateLexer::NPrefix . ($this->prefix === self::PrefixNone ? '' : $this->prefix . '-') . $this->name
-			: '{' . $this->name . '}';
+			? TemplateLexer::NPrefix . ($this->prefix ? $this->prefix . '-' : '')
+				. $this->name
+				. ($args === '' ? '' : '="' . $args . '"')
+			: '{'
+				. ($this->closing ? '/' : '')
+				. rtrim($this->name
+				. ($args === '' ? '' : ' ' . $args))
+			. '}';
 	}
 
 

@@ -66,7 +66,7 @@ final class TokenStream
 	{
 		$token = $this->current();
 		if (!$token || ($kind && !$token->is(...$kind))) {
-			throw $this->buildUnexpectedException($kind);
+			$this->throwUnexpectedException($kind);
 		}
 		$this->index++;
 		return $token;
@@ -94,7 +94,7 @@ final class TokenStream
 	public function seek(int $index): void
 	{
 		if ($index > count($this->tokens) || $index < 0) {
-			throw new CompileException('The position is out of range.');
+			throw new \InvalidArgumentException('The position is out of range.');
 		}
 		$this->index = $index;
 	}
@@ -109,11 +109,12 @@ final class TokenStream
 	}
 
 
-	public function buildUnexpectedException(
-		array $expected = [],
-		array $end = [],
-		$addendum = '',
-	): CompileException {
+	/**
+	 * @throws CompileException
+	 * @return never
+	 */
+	public function throwUnexpectedException(array $expected = [], $addendum = ''): void
+	{
 		$s = null;
 		$i = 0;
 		do {
@@ -121,23 +122,22 @@ final class TokenStream
 				break;
 			}
 			$s .= $token->text;
-			if (strlen($s) > 10 || ($end && $token->is(...$end))) {
+			if (strlen($s) > 5) {
 				break;
 			}
 		} while (true);
 
-		$quote = fn($s) => preg_match('~^\w|\s~', $s) ? "'" . trim($s) . "'" : trim($s);
-		$expected = array_map(fn($type) => $quote($type), $expected);
-		return new CompileException(
+		$last = $this->current() ?? $this->peek(-1);
+		throw new CompileException(
 			'Unexpected '
 			. ($s === null
 				? 'end'
-				: $quote($s))
+				: "'" . trim($s) . "'")
 			. ($expected && count($expected) < 5
 				? ', expecting ' . implode(', ', $expected)
 				: '')
 			. $addendum,
-			$this->current()?->line ?? $this->peek(-1)?->line,
+			$last->line ?? null,
 		);
 	}
 }

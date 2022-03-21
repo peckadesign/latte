@@ -58,12 +58,6 @@ Assert::same([
 ], parse('<?bogus>text'));
 
 Assert::same([
-	['macroTag', '{contentType xml}', 'contentType', 'xml'],
-	['htmlTagBegin', '<?'],
-	['text', 'bogus>text'],
-], parse('{contentType xml}<?bogus>text'));
-
-Assert::same([
 	['htmlTagBegin', '<!'],
 	['text', 'doctype html'],
 	['htmlTagEnd', '>'],
@@ -90,21 +84,6 @@ Assert::same([
 	['htmlTagEnd', '>'],
 	['text', 'text'],
 ], parse('<!bogus>text'));
-
-Assert::same([
-	['htmlTagBegin', '<div', 'div'],
-	['comment', ' n:syntax="off"', 'n:syntax', 'off'],
-	['htmlTagEnd', '>'],
-	['htmlTagBegin', '<div', 'div'],
-	['htmlTagEnd', '>'],
-	['text', '{foo}'],
-	['htmlTagBegin', '</div', 'div'],
-	['htmlTagEnd', '>'],
-	['text', '{bar}'],
-	['htmlTagBegin', '</div', 'div'],
-	['htmlTagEnd', '>'],
-	['macroTag', '{lorem}', 'lorem'],
-], parse('<div n:syntax="off"><div>{foo}</div>{bar}</div>{lorem}'));
 
 // html attributes
 Assert::same([
