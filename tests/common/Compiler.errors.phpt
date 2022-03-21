@@ -23,7 +23,7 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<a {if}n:href>'),
 	Latte\CompileException::class,
-	'n:attribute must not appear inside tags; found n:href inside {if}.',
+	'Attribute n:href must not appear inside {tags}',
 );
 
 Assert::exception(
@@ -140,19 +140,19 @@ Assert::exception(function () use ($latte) {
 Assert::exception(
 	fn() => $latte->compile('{if 1}'),
 	Latte\CompileException::class,
-	'Missing {/if}',
+	'Unexpected end, expecting {/if}',
 );
 
 Assert::exception(
 	fn() => $latte->compile('<p n:foreach=1><span n:if=1>'),
 	Latte\CompileException::class,
-	'Missing </span> for n:if',
+	'Unexpected end, expecting </span> for element started on line 1',
 );
 
 Assert::exception(
 	fn() => $latte->compile('<p n:foreach=1><span n:if=1></i>'),
 	Latte\CompileException::class,
-	'Unexpected </i>, expecting </span> for n:if',
+	'Unexpected </i>, expecting </span> for element started on line 1',
 );
 
 Assert::exception(
@@ -174,21 +174,21 @@ Assert::exception(
 );
 
 Assert::exception(
-	fn() => $latte->compile('<span n:if=1 n:foreach=2>{foreach}</span>'),
+	fn() => $latte->compile('<span n:if=1 n:foreach=2>{foreach x}</span>'),
 	Latte\CompileException::class,
-	'Unexpected </span> for n:if and n:foreach, expecting {/foreach}',
+	'Unexpected end, expecting {/foreach}',
 );
 
 Assert::exception(
 	fn() => $latte->compile('<span n:if=1 n:foreach=2>{/foreach}'),
 	Latte\CompileException::class,
-	'Unexpected {/foreach}, expecting </span> for n:if and n:foreach',
+	'Unexpected {/foreach}, expecting </span> for element started on line 1',
 );
 
 Assert::exception(
 	fn() => $latte->compile('<span n:if=1 n:foreach=2>{/if}'),
 	Latte\CompileException::class,
-	'Unexpected {/if}, expecting </span> for n:if and n:foreach',
+	'Unexpected {/if}, expecting </span> for element started on line 1',
 );
 
 Assert::exception(
@@ -198,5 +198,5 @@ Assert::exception(
 			{/foreach}
 		XX),
 	Latte\CompileException::class,
-	'Unexpected </li>, expecting </a> for n:tag-if (on line 2)',
+	"Unexpected '</li>', expecting </a> for element started on line 2 (on line 2)",
 );

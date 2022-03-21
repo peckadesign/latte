@@ -148,12 +148,12 @@ test('seek()', function () {
 	Assert::noError(fn() => $stream->seek(1));
 	Assert::exception(
 		fn() => $stream->seek(2),
-		CompileException::class,
+		InvalidArgumentException::class,
 		'The position is out of range.',
 	);
 	Assert::exception(
 		fn() => $stream->seek(-1),
-		CompileException::class,
+		InvalidArgumentException::class,
 		'The position is out of range.',
 	);
 });
