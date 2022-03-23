@@ -39,44 +39,36 @@ final class TemplateLexer
 	/** @var string[] */
 	private array $delimiters;
 	private string $input;
-
-	/** @var LegacyToken[] */
-	private array $tokens;
 	private int $offset;
 	private int $line;
 	private array $states;
-	private ?string $syntaxEndTag = null;
-	private int $syntaxEndLevel = 0;
-	private ?string $lastHtmlTag;
-	private bool $xmlMode = false;
+	private bool $xmlMode;
 
 
-	public function tokenize(string $template, string $contentType = Context::Html): array
+	/** @return \Generator<LegacyToken> */
+	public function tokenize(string $template, string $contentType = Context::Html): \Generator
 	{
 		$this->input = $this->normalize($template);
 		$this->offset = 0;
 		$this->line = 1;
-		$this->states = $this->tokens = [];
-		$this->lastHtmlTag = $this->syntaxEndTag = null;
+		$this->states = [];
 		$this->setContentType($contentType);
 		$this->setSyntax(null);
 
 		do {
 			$state = $this->states[0];
-			$this->{$state['name']}(...$state['args']);
+			yield from $this->{$state['name']}(...$state['args']);
 		} while ($this->states[0]['name'] !== self::StateEnd);
 
 		if ($this->offset < strlen($this->input)) {
-			$this->send($this->createToken(LegacyToken::TEXT, substr($this->input, $this->offset)));
+			yield $this->createToken(LegacyToken::TEXT, substr($this->input, $this->offset));
 		}
-
-		return $this->tokens;
 	}
 
 
-	private function statePlain(): void
+	private function statePlain(): \Generator
 	{
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?P<indent>(?<=\n|^)[ \t]*)?(?P<macro>' . $this->delimiters[0] . ')
 		~xsi');
 
@@ -89,10 +81,10 @@ final class TemplateLexer
 	}
 
 
-	private function stateLatte(string $delimiter, ?string $indent = null): void
+	private function stateLatte(string $delimiter, ?string $indent = null): \Generator
 	{
 		$this->popState();
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?P<comment>\*.*?\*' . $this->delimiters[1] . ')(?P<newline>\n{0,2})|
 			(?P<macro>(?>
 				' . self::ReString . '|
@@ -108,13 +100,13 @@ final class TemplateLexer
 			[$token->name, $token->value, $token->empty, $token->closing] = $this->parseMacroTag($m['macro']);
 			$token->indentation = $indent;
 			$token->newline = isset($m['rmargin']);
-			$this->send($token);
+			yield $token;
 
 		} elseif (!empty($m['comment'])) {
 			$token = $this->createToken(LegacyToken::COMMENT, $indent . $delimiter . $m[0]);
 			$token->indentation = $indent;
 			$token->newline = (bool) $m['newline'];
-			$this->send($token);
+			yield $token;
 
 		} else {
 			throw new CompileException('Malformed tag contents.', $this->line);
@@ -122,16 +114,16 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlText(): void
+	private function stateHtmlText(): \Generator
 	{
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?:(?<=\n|^)[ \t]*)?<(?P<closing>/?)(?P<tag>' . self::ReTagName . ')|  ##  begin of HTML tag <tag </tag - ignores <!DOCTYPE
 			<(?P<htmlcomment>!(?:--(?!>))?|\?)|     ##  begin of <!, <!--, <!DOCTYPE, <?
 			(?P<indent>(?<=\n|^)[ \t]*)?(?P<macro>' . $this->delimiters[0] . ')
 		~xsi');
 
 		if (!empty($m['htmlcomment'])) { // <! <?
-			$this->send($this->createToken(LegacyToken::HTML_TAG_BEGIN, $m[0]));
+			yield $this->createToken(LegacyToken::HTML_TAG_BEGIN, $m[0]);
 			$ending = $m['htmlcomment'] === '!--'
 				? '--'
 				: ($m['htmlcomment'] === '?' && $this->xmlMode ? '\?' : '');
@@ -141,7 +133,7 @@ final class TemplateLexer
 			$token = $this->createToken(LegacyToken::HTML_TAG_BEGIN, $m[0]);
 			$token->name = $m['tag'];
 			$token->closing = (bool) $m['closing'];
-			$this->send($token);
+			yield $token;
 			$this->setState('stateHtmlTag', $m['closing'] . strtolower($m['tag']));
 
 		} elseif (!empty($m['macro'])) {
@@ -153,10 +145,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlTag(?string $tagName = null): void
+	private function stateHtmlTag(?string $tagName = null): \Generator
 	{
-		$this->lastHtmlTag = $tagName;
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?P<end>/?>)([ \t]*\n)?|  ##  end of HTML tag
 			(?P<macro>' . $this->delimiters[0] . ')|
 			\s*(?P<attr>[^\s"\'>/={]+)(?:\s*=\s*(?P<value>["\']|[^\s"\'=<>`{]+))? ## beginning of HTML attribute
@@ -165,7 +156,7 @@ final class TemplateLexer
 		if (!empty($m[self::StateEnd])) { // end of HTML tag />
 			$token = $this->createToken(LegacyToken::HTML_TAG_END, $m[0]);
 			$empty = str_contains($m[0], '/');
-			$this->send($token);
+			yield $token;
 			if (!$this->xmlMode && !$empty && in_array($tagName, ['script', 'style'], true)) {
 				$this->setState('stateHtmlRCData', $tagName);
 			} else {
@@ -180,17 +171,17 @@ final class TemplateLexer
 			if ($token->value === '"' || $token->value === "'") { // attribute = "'
 				if (str_starts_with($token->name, self::NPrefix)) {
 					$token->value = '';
-					if ($m2 = $this->match('~(.*?)' . $m['value'] . '~xsi')) {
+					if ($m2 = yield from $this->match('~(.*?)' . $m['value'] . '~xsi')) {
 						$token->value = $m2[1];
 						$token->text .= $m2[0];
 					}
 				} else {
-					$this->send($token);
+					yield $token;
 					$this->pushState('stateHtmlAttribute', $m['value']);
 					return;
 				}
 			}
-			$this->send($token);
+			yield $token;
 			$this->setState('stateHtmlTag');
 
 		} elseif (!empty($m['macro'])) {
@@ -202,15 +193,15 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlAttribute(string $quote): void
+	private function stateHtmlAttribute(string $quote): \Generator
 	{
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?P<quote>' . $quote . ')|  ##  end of HTML attribute
 			(?P<macro>' . $this->delimiters[0] . ')
 		~xsi');
 
 		if (!empty($m['quote'])) {
-			$this->send($this->createToken(LegacyToken::HTML_ATTRIBUTE_END, $m[0]));
+			yield $this->createToken(LegacyToken::HTML_ATTRIBUTE_END, $m[0]);
 			$this->popState();
 
 		} elseif (!empty($m['macro'])) {
@@ -219,10 +210,10 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlRCData(): void
+	private function stateHtmlRCData(string $tagName): \Generator
 	{
-		$m = $this->match('~
-			</(?P<tag>' . $this->lastHtmlTag . ')(?=[\s/>])| ##  end HTML tag </tag
+		$m = yield from $this->match('~
+			</(?P<tag>' . $tagName . ')(?=[\s/>])| ##  end HTML tag </tag
 			(?P<indent>(?<=\n|^)[ \t]*)?(?P<macro>' . $this->delimiters[0] . ')
 		~xsi');
 
@@ -230,7 +221,7 @@ final class TemplateLexer
 			$token = $this->createToken(LegacyToken::HTML_TAG_BEGIN, $m[0]);
 			$token->name = $m['tag'];
 			$token->closing = true;
-			$this->send($token);
+			yield $token;
 			$this->setState('stateHtmlTag');
 
 		} elseif (!empty($m['macro'])) {
@@ -242,15 +233,15 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlComment(string $ending): void
+	private function stateHtmlComment(string $ending): \Generator
 	{
-		$m = $this->match('~
+		$m = yield from $this->match('~
 			(?P<htmlcomment>' . $ending . '>)|   ##  end of HTML comment
 			(?P<indent>(?<=\n|^)[ \t]*)?(?P<macro>' . $this->delimiters[0] . ')
 		~xsi');
 
 		if (!empty($m['htmlcomment'])) { // -->
-			$this->send($this->createToken(LegacyToken::HTML_TAG_END, $m[0]));
+			yield $this->createToken(LegacyToken::HTML_TAG_END, $m[0]);
 			$this->setState('stateHtmlText');
 
 		} elseif (!empty($m['macro'])) {
@@ -264,9 +255,8 @@ final class TemplateLexer
 
 	/**
 	 * Matches next token.
-	 * @return string[]
 	 */
-	private function match(string $re): array
+	private function match(string $re): \Generator
 	{
 		if (!preg_match($re, $this->input, $matches, PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL, $this->offset)) {
 			if (preg_last_error()) {
@@ -278,7 +268,7 @@ final class TemplateLexer
 
 		$value = substr($this->input, $this->offset, $matches[0][1] - $this->offset);
 		if ($value !== '') {
-			$this->send($this->createToken(LegacyToken::TEXT, $value));
+			yield $this->createToken(LegacyToken::TEXT, $value);
 		}
 
 		$this->offset = $matches[0][1] + strlen($matches[0][0]);
@@ -381,6 +371,7 @@ final class TemplateLexer
 		$token->type = $type;
 		$token->text = $text;
 		$token->line = $this->line;
+		$this->line += substr_count($token->text, "\n");
 		return $token;
 	}
 
@@ -390,43 +381,6 @@ final class TemplateLexer
 		$this->filter($token);
 		$this->tokens[] = $token;
 		$this->line += substr_count($token->text, "\n");
-	}
-
-
-	/**
-	 * Process low-level macros.
-	 */
-	protected function filter(LegacyToken $token): void
-	{
-		if ($token->type === LegacyToken::MACRO_TAG && $token->name === 'syntax') {
-			$this->setSyntax($token->closing ? null : $token->value);
-			$token->type = LegacyToken::COMMENT;
-
-		} elseif ($token->type === LegacyToken::HTML_ATTRIBUTE_BEGIN && $token->name === 'n:syntax') {
-			$this->setSyntax($token->value);
-			$this->syntaxEndTag = $this->lastHtmlTag;
-			$this->syntaxEndLevel = 1;
-			$token->type = LegacyToken::COMMENT;
-
-		} elseif ($token->type === LegacyToken::HTML_TAG_BEGIN && $this->lastHtmlTag === $this->syntaxEndTag) {
-			$this->syntaxEndLevel++;
-
-		} elseif (
-			$token->type === LegacyToken::HTML_TAG_END
-			&& $this->lastHtmlTag === ('/' . $this->syntaxEndTag)
-			&& --$this->syntaxEndLevel === 0
-		) {
-			$this->setSyntax(null);
-
-		} elseif ($token->type === LegacyToken::MACRO_TAG && $token->name === 'contentType') {
-			if (str_contains($token->value, 'html')) {
-				$this->setContentType(Context::Html);
-			} elseif (str_contains($token->value, 'xml')) {
-				$this->setContentType(Context::Xml);
-			} else {
-				$this->setContentType(Context::Text);
-			}
-		}
 	}
 
 

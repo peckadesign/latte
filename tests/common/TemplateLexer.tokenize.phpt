@@ -13,7 +13,7 @@ function parse($s)
 	$lexer = new Latte\Compiler\TemplateLexer;
 	return array_map(
 		fn(LegacyToken $token) => array_filter([$token->type, $token->text, $token->name ?? null, $token->value ?? null]),
-		$lexer->tokenize($s),
+		iterator_to_array($lexer->tokenize($s), false),
 	);
 }
 
