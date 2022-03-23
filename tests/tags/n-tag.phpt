@@ -30,8 +30,7 @@ Assert::match(
 	<<<'XX'
 			<h1
 		class="a" title="b">
-				<h2></h2
-				>
+				<h2></h2>
 			</h1>
 		XX,
 	$latte->renderToString(
@@ -68,17 +67,16 @@ Assert::match(
 Assert::match(
 	<<<'XX'
 		%A%
-				$ʟ_tag[0] = ('h' . 1) ?? 'div';
-				Latte\Runtime\Filters::checkTagSwitch('div', $ʟ_tag[0]);
+				$ʟ_tag[0] = '';
 				echo '<';
-				echo $ʟ_tag[0];
+				echo $ʟ_tmp = (Latte\Essential\Tags\NTagAttribute::check('div', 'h' . 1));
+				$ʟ_tag[0] = '</' . $ʟ_tmp . '>' . $ʟ_tag[0];
 				echo ' class="bar" ';
 				if (isset($id)) /* line 1 */ {
 					echo 'id="content"';
 				}
-				echo '></';
-				echo $ʟ_tag[0];
 				echo '>';
+				echo $ʟ_tag[0];
 		%A%
 		XX,
 	$latte->compile('<div class="bar" {ifset $id}id="content"{/ifset} n:tag="h . 1"></div>'),
@@ -86,16 +84,16 @@ Assert::match(
 
 
 Assert::exception(
-	fn() => $latte->compile('<div n:tag>'),
+	fn() => $latte->compile('<div n:tag/>'),
 	Latte\CompileException::class,
 	'Missing arguments in n:tag',
 );
 
 
 Assert::exception(
-	fn() => $latte->compile('<div n:inner-tag>'),
+	fn() => $latte->compile('<div n:inner-tag/>'),
 	Latte\CompileException::class,
-	'Unknown n:inner-tag, use n:tag attribute.',
+	'Unexpected attribute n:inner-tag, did you mean n:inner-try?',
 );
 
 
@@ -123,7 +121,7 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->renderToString('<div n:tag="\'SCRIPT\'"></div>'),
 	Latte\RuntimeException::class,
-	'Forbidden tag <div> change to <script>.',
+	'Forbidden tag <div> change to <SCRIPT>.',
 );
 
 

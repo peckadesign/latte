@@ -1,9 +1,5 @@
 <?php
 
-/**
- * Test: BlockMacros and snippets
- */
-
 declare(strict_types=1);
 
 use Tester\Assert;
@@ -181,12 +177,12 @@ $dataSets = [
 	//embed
 	[
 		[
-			'main' => '{embed file "embed"}{snippet foo}hello{/snippet}{block embed}{snippet bar}world{/snippet}{/block}{/embed}',
+			'main' => '{embed file "embed"}{block embed}{snippet bar}world{/snippet}{/block}{/embed}',
 			'embed' => '{block embed}{/block}',
 		],
-		['foo' => 'hello'],
+		['bar' => 'world'],
 		'<div id="bar">world</div>',
-		['foo'],
+		['bar'],
 	],
 ];
 

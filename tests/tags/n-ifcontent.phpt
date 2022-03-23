@@ -73,14 +73,14 @@ Assert::exception(
 Assert::exception(
 	fn() => $latte->compile('<html>{ifcontent}'),
 	Latte\CompileException::class,
-	'Unknown {ifcontent}, use n:ifcontent attribute.',
+	'Unexpected tag {ifcontent}',
 );
 
 
 Assert::exception(
-	fn() => $latte->compile('<div n:inner-ifcontent>'),
+	fn() => $latte->compile('<div n:inner-ifcontent/>'),
 	Latte\CompileException::class,
-	'Unknown n:inner-ifcontent, use n:ifcontent attribute.',
+	'Unexpected attribute n:inner-ifcontent',
 );
 
 
@@ -88,13 +88,6 @@ Assert::exception(
 	fn() => $latte->renderToString('<br n:ifcontent>'),
 	Latte\CompileException::class,
 	'Unnecessary n:content on empty element <br>',
-);
-
-
-Assert::exception(
-	fn() => $latte->renderToString('<div n:ifcontent />'),
-	Latte\CompileException::class,
-	'Unnecessary n:content on empty element <div>',
 );
 
 
@@ -110,12 +103,13 @@ Assert::match(
 					echo '>';
 					ob_start();
 					try {
+
 					} finally {
-						$ʟ_ifc[1] = rtrim(ob_get_flush()) === '';
+						$ʟ_ifc[0] = rtrim(ob_get_flush()) === '';
 					}
 					echo '</div>';
 				} finally {
-					if ($ʟ_ifc[1] ?? null) {
+					if ($ʟ_ifc[0] ?? null) {
 						ob_end_clean();
 					} else {
 						echo ob_get_clean();

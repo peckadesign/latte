@@ -14,6 +14,7 @@ use Latte\Compiler\Nodes\FragmentNode;
 use Latte\Context;
 use Latte\Helpers;
 use Latte\Policy;
+use Latte\Runtime\Template;
 use Latte\SecurityViolationException;
 use Latte\Strict;
 
@@ -27,6 +28,9 @@ final class TemplateParser
 		LocationText = 2,
 		LocationTag = 3;
 
+	/** @var Block[][] */
+	public array $blocks = [[]];
+	public int $blockLayer = Template::LayerTop;
 	public int $location = self::LocationHead;
 
 	/** @var array<string, callable(Tag, self): (Node|\Generator|void)> */
@@ -40,6 +44,7 @@ final class TemplateParser
 	private ?Policy $policy = null;
 	private string $contentType = Context::Html;
 	private int $tagDepth = 0;
+	private int $counter = 0;
 	private array $filters = [];
 	private ?Tag $tag = null;
 	private $context;
@@ -209,7 +214,7 @@ final class TemplateParser
 		$this->tagDepth--;
 		$this->popTag();
 
-		$node->line = $token->line;
+		$node->line = $tag->line;
 		$replaced = $outputMode === null || $outputMode === Nodes\StatementNode::OutputInline;
 		$res = new FragmentNode;
 		if ($token->indentation && ($replaced || !$token->newline)) {
@@ -228,28 +233,15 @@ final class TemplateParser
 
 	private function createTag(LegacyToken $token): Tag
 	{
-		$modifiers = $token->modifiers;
-
-		if (strpbrk($token->name, '=~%^&_')) {
-			if (!Helpers::removeFilter($modifiers, 'noescape')) {
-				$modifiers .= '|escape';
-			} elseif ($this->policy && !$this->policy->isFilterAllowed('noescape')) {
-				throw new SecurityViolationException('Filter |noescape is not allowed.');
-			}
-
-			if (
-				$token->name === '='
-				&& $this->html->getElement()
-				&& ($prev = $this->stream->peek(-1))
-				&& $this->contentType === Context::Html
-				&& strcasecmp($this->html->getElement()->startTag->getName(), 'script') === 0
-				&& preg_match('#["\']$#D', $prev->text)
-			) {
-				throw new CompileException("Do not place {$token->text} inside quotes in JavaScript.", $token->line);
-			}
-		}
-
-		return new Tag($token->name, $token->value, $modifiers, $token->empty, $token->closing, $token->line, $this->location, $this->html->getElement());
+		return new Tag(
+			line: $token->line,
+			closing: $token->closing,
+			name: $token->name,
+			args: $token->value,
+			void: $token->empty,
+			location: $this->location,
+			htmlElement: $this->html->getElement(),
+		);
 	}
 
 
@@ -276,6 +268,10 @@ final class TemplateParser
 
 	private function checkEndTag(Tag $start, ?Tag $end): void
 	{
+		if ($start->name === 'block' && !$this->tag->parent) { // TODO: hardcoded
+			return;
+		}
+
 		if (!$end
 			|| ($end->name !== $start->name && $end->name !== '')
 			|| !$end->closing
@@ -285,6 +281,24 @@ final class TemplateParser
 			$tag = $end?->getNotation($end->args !== '') ?? 'end';
 			throw new CompileException("Unexpected $tag, expecting {/$start->name}", ($end ?? $start)->line);
 		}
+	}
+
+
+	public function checkBlockIsUnique(Block $block): void
+	{
+		$name = $block->name;
+		if (!preg_match('#^[a-z]#iD', $name)) {
+			throw new CompileException(ucfirst($block->tag->name) . " name must start with letter a-z, '{$name}' given.", $block->tag->line);
+		}
+
+		if ($block->layer === Template::LayerSnippet
+			? isset($this->blocks[$block->layer][$name])
+			: (isset($this->blocks[Template::LayerLocal][$name]) || isset($this->blocks[$this->blockLayer][$name]))
+		) {
+			throw new CompileException("Cannot redeclare {$block->tag->name} '{$name}'", $block->tag->line);
+		}
+
+		$this->blocks[$block->layer][$name] = $block;
 	}
 
 
@@ -332,6 +346,12 @@ final class TemplateParser
 	public function popTag(): void
 	{
 		$this->tag = $this->tag->parent;
+	}
+
+
+	public function generateId(): int
+	{
+		return $this->counter++;
 	}
 
 
