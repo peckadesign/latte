@@ -26,14 +26,11 @@ class TryNode extends StatementNode
 
 
 	/** @return \Generator<int, ?array, array{FragmentNode, ?Tag}, self> */
-	public static function create(Tag $tag): \Generator
+	public static function create(): \Generator
 	{
-		$tag->expectArguments(false);
-
 		$node = new self;
 		[$node->try, $nextTag] = yield ['else'];
 		if ($nextTag?->name === 'else') {
-			$nextTag->expectArguments(false);
 			[$node->else] = yield;
 		}
 

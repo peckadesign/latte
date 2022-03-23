@@ -11,6 +11,7 @@ namespace Latte\Essential\Passes;
 
 use Latte;
 use Latte\Compiler\Node;
+use Latte\Compiler\Nodes\Php\Expr\VariableNode;
 use Latte\Compiler\NodeTraverser;
 use Latte\Compiler\PrintContext;
 use Latte\Essential\Nodes\ForeachNode;
@@ -28,9 +29,10 @@ final class OverwrittenVariablesPass
 		$vars = [];
 		(new NodeTraverser)->traverse($node, function (Node $node) use (&$vars) {
 			if ($node instanceof ForeachNode && $node->checkArgs) {
-				preg_match('#.+\s+as\s*\$(\w+)(?:\s*=>\s*\$(\w+))?#i', $node->args->text, $m);
-				for ($i = 1; $i < count($m); $i++) {
-					$vars[$m[$i]][] = $node->line;
+				foreach ([$node->key, $node->value] as $var) {
+					if ($var instanceof VariableNode) {
+						$vars[$var->name][] = $node->line;
+					}
 				}
 			}
 		});

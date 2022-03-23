@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Latte\Essential\Nodes;
 
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -20,7 +20,7 @@ use Latte\Compiler\Tag;
  */
 class ImportNode extends StatementNode
 {
-	public LegacyExprNode $file;
+	public ExprNode $file;
 	public bool $global = false;
 
 
@@ -28,7 +28,7 @@ class ImportNode extends StatementNode
 	{
 		$tag->expectArguments();
 		$node = new self;
-		$node->file = $tag->getWord();
+		$node->file = $tag->parser->parseUnquotedStringOrExpression();
 		$node->global = $tag->isInHead();
 		return $node;
 	}
@@ -37,7 +37,7 @@ class ImportNode extends StatementNode
 	public function print(PrintContext $context): string
 	{
 		$code = $context->format(
-			'$this->createTemplate(%word, $this->params, "import")->render() %line;',
+			'$this->createTemplate(%raw, $this->params, "import")->render() %line;',
 			$this->file,
 			$this->line,
 		);

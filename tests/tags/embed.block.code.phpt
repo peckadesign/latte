@@ -36,3 +36,28 @@ Assert::matchFile(
 	__DIR__ . '/expected/embed.block.phtml',
 	$latte->compile('main'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Embed:
+			String:
+				value: foo
+			Array:
+				ArrayItem:
+					Assign:
+						Variable:
+							name: var
+						LNumber:
+							value: 10
+			Fragment:
+				Text:
+					content: ' '
+				Block:
+					String:
+						value: a
+					Fragment:
+				Text:
+					content: ' '
+	XX, exportTraversing('{embed foo, $var = 10} {block a/} {/embed}'));

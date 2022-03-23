@@ -10,7 +10,7 @@ final class Template%a% extends Latte\Runtime\Template
 	public function main(): array
 	{
 %A%
-		$this->createTemplate("inc", $this->params, 'includeblock')->renderToContentType('html') /* line %d% */;
+		$this->createTemplate('inc', $this->params, 'includeblock')->renderToContentType('html') /* line %d% */;
 		echo "\n";
 		if ($this->getParentName()) {
 			return get_defined_vars();
@@ -32,8 +32,8 @@ final class Template%a% extends Latte\Runtime\Template
 				trigger_error("Variable \$$ʟ_v overwritten in foreach on line $ʟ_l");
 			}
 		}
-		$this->parentName = "parent";
-		$this->createTemplate("inc", $this->params, "import")->render() /* line %d% */;
+		$this->parentName = 'parent';
+		$this->createTemplate('inc', $this->params, "import")->render() /* line %d% */;
 	}
 
 

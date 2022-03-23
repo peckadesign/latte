@@ -11,7 +11,7 @@ namespace Latte\Essential\Nodes;
 
 use Latte\Compiler\Nodes\ContentNode;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -22,7 +22,7 @@ use Latte\Compiler\Tag;
  */
 class IfChangedNode extends StatementNode
 {
-	public ?LegacyExprNode $condition = null;
+	public ArrayNode $conditions;
 	public ContentNode $then;
 	public ?ContentNode $else = null;
 	public ?int $elseLine = null;
@@ -32,11 +32,10 @@ class IfChangedNode extends StatementNode
 	public static function create(Tag $tag): \Generator
 	{
 		$node = new self;
-		$node->condition = $tag->getArgs();
+		$node->conditions = $tag->parser->parseArguments();
 
 		[$node->then, $nextTag] = yield ['else'];
 		if ($nextTag?->name === 'else') {
-			$nextTag->expectArguments(false);
 			$node->elseLine = $nextTag->line;
 			[$node->else] = yield;
 		}
@@ -47,7 +46,7 @@ class IfChangedNode extends StatementNode
 
 	public function print(PrintContext $context): string
 	{
-		return $this->condition
+		return $this->conditions->items
 			? $this->printExpression($context)
 			: $this->printCapturing($context);
 	}
@@ -58,7 +57,7 @@ class IfChangedNode extends StatementNode
 		return $this->else
 			? $context->format(
 				<<<'XX'
-					if (($ʟ_loc[%dump] ?? null) !== ($ʟ_tmp = [%raw])) {
+					if (($ʟ_loc[%dump] ?? null) !== ($ʟ_tmp = %raw)) {
 						$ʟ_loc[%0.dump] = $ʟ_tmp;
 						%raw
 					} else %line {
@@ -68,14 +67,14 @@ class IfChangedNode extends StatementNode
 
 					XX,
 				$context->generateId(),
-				$this->condition,
+				$this->conditions,
 				$this->then,
 				$this->elseLine,
 				$this->else,
 			)
 			: $context->format(
 				<<<'XX'
-					if (($ʟ_loc[%dump] ?? null) !== ($ʟ_tmp = [%raw])) {
+					if (($ʟ_loc[%dump] ?? null) !== ($ʟ_tmp = %raw)) {
 						$ʟ_loc[%0.dump] = $ʟ_tmp;
 						%2.raw
 					}
@@ -83,7 +82,7 @@ class IfChangedNode extends StatementNode
 
 					XX,
 				$context->generateId(),
-				$this->condition,
+				$this->conditions,
 				$this->then,
 			);
 	}
@@ -133,8 +132,8 @@ class IfChangedNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
-		if ($this->condition) {
-			yield $this->condition;
+		if ($this->conditions) {
+			yield $this->conditions;
 		}
 		yield $this->then;
 		if ($this->else) {

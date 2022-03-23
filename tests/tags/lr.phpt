@@ -14,3 +14,15 @@ Assert::match(
 	"%A%echo '{ }';%A%",
 	$latte->compile('{l} {r}'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Text:
+			content: '{'
+		Text:
+			content: ' '
+		Text:
+			content: '}'
+	XX, exportTraversing('{l} {r}'));

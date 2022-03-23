@@ -9,12 +9,13 @@ declare(strict_types=1);
 
 namespace Latte\Essential\Nodes;
 
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
+use Latte\Compiler\Nodes\Php\Expr\FilterNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PhpHelpers;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
-use Latte\Helpers;
 
 
 /**
@@ -22,39 +23,40 @@ use Latte\Helpers;
  */
 class IncludeFileNode extends StatementNode
 {
-	public string $file;
-	public LegacyExprNode $args;
-	public string $filter;
+	public ExprNode $file;
+	public ArrayNode $args;
+	public ?FilterNode $filter = null;
 	public string $mode;
 
 
 	public static function create(Tag $tag): self
 	{
+		$tag->expectArguments();
 		$node = new self;
-		[$node->file] = $tag->tokenizer->fetchWordWithModifier('file');
+		[$node->file] = $tag->parser->parseWithModifier(['file']);
 		$node->mode = 'include';
-		if ($tag->tokenizer->isNext('with') && !$tag->tokenizer->isPrev(',')) {
-			$tag->tokenizer->consumeValue('with');
-			$tag->tokenizer->consumeValue('blocks');
+
+		$stream = $tag->parser->stream;
+		if ($stream->tryConsume('with')) {
+			$stream->consume('blocks');
 			$node->mode = 'includeblock';
 		}
 
-		$node->args = $tag->getArgs();
-		$node->filter = $tag->modifiers;
+		$stream->tryConsume(',');
+		$node->args = $tag->parser->parseArguments();
+		$node->filter = $tag->parser->parseFilters();
 		return $node;
 	}
 
 
 	public function print(PrintContext $context): string
 	{
-		$filter = $this->filter;
-		$noEscape = Helpers::removeFilter($filter, 'noescape');
-		if ($filter && !$noEscape) {
-			$filter .= '|escape';
-		}
+		$filter = $noEscape = (string) $this->filter?->name === 'noescape'
+			? $this->filter->inner
+			: ($this->filter ? FilterNode::escapeFilter($this->filter) : null);
 
 		return $context->format(
-			'$this->createTemplate(%word, %array? + $this->params, %dump)->renderToContentType(%raw) %line;',
+			'$this->createTemplate(%raw, %raw? + $this->params, %dump)->renderToContentType(%raw) %line;',
 			$this->file,
 			$this->args,
 			$this->mode,
@@ -77,6 +79,10 @@ class IncludeFileNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
+		yield $this->file;
 		yield $this->args;
+		if ($this->filter) {
+			yield $this->filter;
+		}
 	}
 }

@@ -105,3 +105,10 @@ Assert::same([
 		'args' => [],
 	],
 ], $e->getTrace());
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Trace:
+	XX, exportTraversing('{trace}'));

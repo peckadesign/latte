@@ -62,3 +62,21 @@ Assert::matchFile(
 	__DIR__ . '/expected/iterateWhile.html',
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Foreach:
+			Variable:
+				name: a
+			Variable:
+				name: b
+			Fragment:
+				IterateWhile:
+					Variable:
+						name: cond
+					Fragment:
+						Text:
+							content: '...'
+	XX, exportTraversing('{foreach $a as $b}{iterateWhile $cond}...{/iterateWhile}{/foreach}'));

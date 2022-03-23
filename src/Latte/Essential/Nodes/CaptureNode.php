@@ -10,9 +10,12 @@ declare(strict_types=1);
 namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
+use Latte\Compiler\Node;
 use Latte\Compiler\Nodes\ContentNode;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr;
+use Latte\Compiler\Nodes\Php\Expr\FilterNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -24,22 +27,23 @@ use Latte\Context;
  */
 class CaptureNode extends StatementNode
 {
-	public LegacyExprNode $variable;
-	public string $filter;
+	public ExprNode $variable;
+	public ?FilterNode $filter = null;
 	public ContentNode $content;
 
 
 	/** @return \Generator<int, ?array, array{FragmentNode, ?Tag}, self> */
 	public static function create(Tag $tag): \Generator
 	{
-		$tag->extractModifier();
 		$tag->expectArguments();
-		if (!str_starts_with($tag->args, '$')) {
-			throw new CompileException("Invalid capture block variable '$tag->args'", $tag->line);
+		$variable = $tag->parser->parseExpression();
+		if (!self::canBeAssignedTo($variable)) {
+			$source = trim($tag->parser->stream->getText(0, $tag->parser->stream->getIndex()));
+			throw new CompileException("It is not possible to write into '$source' in " . $tag->getNotation(), $tag->line);
 		}
 		$node = new self;
-		$node->variable = $tag->getArgs();
-		$node->filter = $tag->modifiers;
+		$node->variable = $variable;
+		$node->filter = $tag->parser->parseFilters();
 		[$node->content] = yield;
 		return $node;
 	}
@@ -60,7 +64,7 @@ class CaptureNode extends StatementNode
 				} finally {
 					$ʟ_tmp = %raw;
 				}
-				$ʟ_fi = new LR\FilterInfo(%dump); %args = %modifyContent($ʟ_tmp);
+				$ʟ_fi = new LR\FilterInfo(%dump); %raw = %modifyContent($ʟ_tmp);
 
 
 				XX,
@@ -74,9 +78,21 @@ class CaptureNode extends StatementNode
 	}
 
 
+	private static function canBeAssignedTo(Node $node): bool
+	{
+		return $node instanceof Expr\VariableNode
+			|| $node instanceof Expr\ArrayAccessNode
+			|| $node instanceof Expr\PropertyFetchNode
+			|| $node instanceof Expr\StaticPropertyFetchNode;
+	}
+
+
 	public function &getIterator(): \Generator
 	{
 		yield $this->variable;
+		if ($this->filter) {
+			yield $this->filter;
+		}
 		yield $this->content;
 	}
 }

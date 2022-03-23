@@ -52,3 +52,12 @@ $latte->setContentType(Context::Xml);
 
 $template = $latte->createTemplate('--');
 Assert::same(Context::Xml, $template->getContentType());
+
+
+// traversing
+$latte->addExtension($extension = new DumpExtension);
+$latte->compile('{contentType xml}');
+Assert::match(<<<'XX'
+	Fragment:
+		ContentType:
+	XX, $extension->export());

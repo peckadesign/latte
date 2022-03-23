@@ -11,13 +11,14 @@ namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
+use Latte\Compiler\Nodes\Php\Scalar\StringNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
-use Latte\Helpers;
 
 
 /**
@@ -25,9 +26,9 @@ use Latte\Helpers;
  */
 class EmbedNode extends StatementNode
 {
-	public string $name;
+	public ExprNode $name;
 	public string $mode;
-	public LegacyExprNode $args;
+	public ArrayNode $args;
 	public FragmentNode $blocks;
 	public int|string|null $layer;
 
@@ -38,9 +39,10 @@ class EmbedNode extends StatementNode
 		$tag->expectArguments();
 
 		$node = new self;
-		[$node->name, $mode] = $tag->tokenizer->fetchWordWithModifier(['block', 'file']);
-		$node->mode = $mode ?? (preg_match('~^[\w-]+$~DA', $node->name) ? 'block' : 'file');
-		$node->args = $tag->getArgs();
+		[$node->name, $mode] = $tag->parser->parseWithModifier(['block', 'file']);
+		$node->mode = $mode ?? ($node->name instanceof StringNode && preg_match('~[\w-]+$~DA', $node->name->value) ? 'block' : 'file');
+		$tag->parser->stream->tryConsume(',');
+		$node->args = $tag->parser->parseArguments();
 
 		$prevIndex = $parser->blockLayer;
 		$parser->blockLayer = $node->layer = count($parser->blocks);
@@ -74,7 +76,7 @@ class EmbedNode extends StatementNode
 				<<<'XX'
 					$this->enterBlockLayer(%dump, get_defined_vars()) %line; %raw
 					try {
-						$this->createTemplate(%word, %array, "embed")->renderToContentType(%dump) %1.line;
+						$this->createTemplate(%raw, %raw, "embed")->renderToContentType(%dump) %1.line;
 					} finally {
 						$this->leaveBlockLayer();
 					}
@@ -92,7 +94,7 @@ class EmbedNode extends StatementNode
 					$this->enterBlockLayer(%dump, get_defined_vars()) %line; %raw
 					$this->copyBlockLayer();
 					try {
-						$this->renderBlock(%raw, %array, %dump) %1.line;
+						$this->renderBlock(%raw, %raw, %dump) %1.line;
 					} finally {
 						$this->leaveBlockLayer();
 					}
@@ -101,7 +103,7 @@ class EmbedNode extends StatementNode
 				$this->layer,
 				$this->line,
 				$imports,
-				$context->format(Helpers::isNameDynamic($this->name) ? '%word' : '%dump', $this->name),
+				$this->name,
 				$this->args,
 				implode('', $context->getEscapingContext()),
 			);
@@ -116,6 +118,8 @@ class EmbedNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
+		yield $this->name;
+		yield $this->args;
 		yield $this->blocks;
 	}
 }

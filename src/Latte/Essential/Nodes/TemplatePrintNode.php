@@ -12,6 +12,7 @@ namespace Latte\Essential\Nodes;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
+use Latte\Compiler\Token;
 
 
 /**
@@ -25,7 +26,8 @@ class TemplatePrintNode extends StatementNode
 	public static function create(Tag $tag): self
 	{
 		$node = new self;
-		$node->template = $tag->tokenizer->fetchWord() ?: null;
+		$stream = $tag->parser->stream;
+		$node->template = $stream->tryConsume(Token::Php_NameFullyQualified, Token::Php_NameQualified)?->text;
 		return $node;
 	}
 

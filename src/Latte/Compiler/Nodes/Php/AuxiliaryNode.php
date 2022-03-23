@@ -7,23 +7,21 @@
 
 declare(strict_types=1);
 
-namespace Latte\Compiler\Nodes;
+namespace Latte\Compiler\Nodes\Php;
 
-use Latte\Compiler\Node;
 use Latte\Compiler\PrintContext;
 
 
-class LegacyExprNode extends Node
+class AuxiliaryNode extends ExprNode
 {
 	public function __construct(
-		public string $text,
-		public ?int $line = null,
+		public \Closure $callable,
 	) {
 	}
 
 
 	public function print(PrintContext $context): string
 	{
-		return $context->format('%args', $this);
+		return ($this->callable)($context);
 	}
 }

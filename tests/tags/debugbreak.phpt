@@ -22,4 +22,17 @@ if (!function_exists('xdebug_break')) {
 
 Assert::match('%A%xdebug_break()%A%', $latte->compile('{debugbreak}'));
 
-Assert::match('%A%if ($i==1) xdebug_break()%A%', $latte->compile('{debugbreak $i==1}'));
+Assert::match('%A%if ($i == 1) xdebug_break()%A%', $latte->compile('{debugbreak $i==1}'));
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Debugbreak:
+			BinaryOp:
+				operator: ==
+				Variable:
+					name: i
+				LNumber:
+					value: 1
+	XX, exportTraversing('{debugbreak $i==1}'));

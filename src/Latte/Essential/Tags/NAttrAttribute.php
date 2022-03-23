@@ -25,11 +25,12 @@ final class NAttrAttribute
 	public static function parse(Tag $tag): void
 	{
 		$tag->expectArguments();
+		$args = $tag->parser->parseArguments();
 		$tag->htmlElement->attrs->append(new AuxiliaryNode(
 			fn(PrintContext $context) => $context->format(
-				'$ʟ_tmp = %array;
+				'$ʟ_tmp = %raw;
 				echo %raw::print(isset($ʟ_tmp[0]) && is_array($ʟ_tmp[0]) ? $ʟ_tmp[0] : $ʟ_tmp) %line;',
-				$tag->tokenizer,
+				$args,
 				self::class,
 				$tag->line,
 			),

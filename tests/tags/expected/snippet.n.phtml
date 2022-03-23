@@ -36,7 +36,7 @@ final class Template%a% extends Latte\Runtime\Template
 		extract($ʟ_args);
 		unset($ʟ_args);
 
-		$this->global->snippetDriver->enter("outer", 'static') /* line %d% */;
+		$this->global->snippetDriver->enter('outer', 'static') /* line %d% */;
 		try {
 			echo '	<p>Outer</p>
 ';
@@ -53,7 +53,7 @@ final class Template%a% extends Latte\Runtime\Template
 		extract($ʟ_args);
 		unset($ʟ_args);
 
-		$this->global->snippetDriver->enter("gallery", 'static') /* line %d% */;
+		$this->global->snippetDriver->enter('gallery', 'static') /* line %d% */;
 		try {
 
 		} finally {

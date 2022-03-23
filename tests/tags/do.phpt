@@ -15,6 +15,18 @@ $latte = new Latte\Engine;
 $latte->setLoader(new Latte\Loaders\StringLoader);
 
 Assert::match(
-	'%A%$a = \'test\' ? ([]) : null%A%',
+	'%A%$a = \'test\' ? [] : null%A%',
 	$latte->compile('{do $a = test ? ([])}'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Do:
+			Assign:
+				Variable:
+					name: a
+				LNumber:
+					value: 1
+	XX, exportTraversing('{do $a = 1}'));

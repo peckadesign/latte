@@ -11,7 +11,7 @@ namespace Latte\Essential\Nodes;
 
 use Latte\Compiler\Nodes\ContentNode;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -22,7 +22,9 @@ use Latte\Compiler\Tag;
  */
 class ForNode extends StatementNode
 {
-	public LegacyExprNode $args;
+	public ?ExprNode $init = null;
+	public ?ExprNode $condition = null;
+	public ?ExprNode $next = null;
 	public ContentNode $content;
 
 
@@ -30,8 +32,13 @@ class ForNode extends StatementNode
 	public static function create(Tag $tag): \Generator
 	{
 		$tag->expectArguments();
+		$stream = $tag->parser->stream;
 		$node = new self;
-		$node->args = $tag->getArgs();
+		$node->init = $stream->is(';') ? null : $tag->parser->parseExpression();
+		$stream->consume(';');
+		$node->condition = $stream->is(';') ? null : $tag->parser->parseExpression();
+		$stream->consume(';');
+		$node->next = $tag->parser->isEnd() ? null : $tag->parser->parseExpression();
 		[$node->content] = yield;
 		return $node;
 	}
@@ -41,12 +48,14 @@ class ForNode extends StatementNode
 	{
 		return $context->format(
 			<<<'XX'
-				for (%raw) %line {
+				for (%raw; %raw; %raw) %line {
 					%raw
 				}
 
 				XX,
-			$this->args,
+			$this->init,
+			$this->condition,
+			$this->next,
 			$this->line,
 			$this->content,
 		);
@@ -55,7 +64,15 @@ class ForNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
-		yield $this->args;
+		if ($this->init) {
+			yield $this->init;
+		}
+		if ($this->condition) {
+			yield $this->condition;
+		}
+		if ($this->next) {
+			yield $this->next;
+		}
 		yield $this->content;
 	}
 }

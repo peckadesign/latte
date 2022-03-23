@@ -68,3 +68,14 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Unexpected attribute n:inner-class, did you mean n:inner-last?',
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Element:
+			name: input
+			Auxiliary:
+			Fragment:
+				Auxiliary:
+	XX, exportTraversing('<input n:class="title => hello">'));

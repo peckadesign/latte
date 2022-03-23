@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Latte\Essential\Nodes;
 
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -20,15 +20,15 @@ use Latte\Compiler\Tag;
  */
 class DumpNode extends StatementNode
 {
-	public ?LegacyExprNode $expression = null;
+	public ?ExprNode $expression = null;
 
 
 	public static function create(Tag $tag): self
 	{
 		$node = new self;
-		if ($tag->args !== '') {
-			$node->expression = $tag->getArgs();
-		}
+		$node->expression = $tag->parser->isEnd()
+			? null
+			: $tag->parser->parseExpression();
 		return $node;
 	}
 

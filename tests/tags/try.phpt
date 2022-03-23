@@ -153,3 +153,19 @@ Assert::matchFile(
 			XX,
 	),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Try:
+			Fragment:
+				Text:
+					content: '.try.'
+				Rollback:
+				Text:
+					content: '.rollback.'
+			Fragment:
+				Text:
+					content: '.else.'
+	XX, exportTraversing('{try}.try.{rollback}.rollback.{else}.else.{/try}'));

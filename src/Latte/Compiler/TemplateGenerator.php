@@ -41,7 +41,7 @@ final class TemplateGenerator
 		bool $strictMode = false,
 	): string {
 		$code = $node->print($context);
-		$extractParams = self::buildParams($context->paramsExtraction, '$this->params');
+		$extractParams = self::buildParams($context->paramsExtraction, '$this->params', $context);
 		$this->addMethod('main', $extractParams . $code . ' return get_defined_vars();', '', 'array');
 
 		if ($context->initialization) {
@@ -91,7 +91,7 @@ final class TemplateGenerator
 	{
 		foreach ($blocks as $block) {
 			if (!$block->isDynamic()) {
-				$meta[$block->layer][$block->name] = $context->getContentType() === $block->context
+				$meta[$block->layer][$block->name->value] = $context->getContentType() === $block->context
 					? $block->method
 					: [$block->method, $block->context];
 			}
@@ -100,7 +100,7 @@ final class TemplateGenerator
 			if (str_contains($body, '$')) {
 				$embedded = $block->tag->name === 'block' && is_int($block->layer) && $block->layer;
 				$body = ($block->isDynamic() ? '' : 'extract(' . ($embedded ? 'end($this->varStack)' : '$this->params') . ');')
-					. $this->buildParams($block->parameters, '$ʟ_args')
+					. $this->buildParams($block->parameters, '$ʟ_args', $context)
 					. 'unset($ʟ_args);'
 					. "\n\n" . $body;
 			}
@@ -120,8 +120,20 @@ final class TemplateGenerator
 	}
 
 
-	private function buildParams(array $params, string $cont): string
+	private function buildParams(array $params, string $cont, PrintContext $context): string
 	{
+		foreach ($params as $i => &$param) {
+			$param = $context->format(
+				'%raw = %raw[%dump] ?? %raw[%dump] ?? %raw;',
+				$param->var,
+				$cont,
+				$i,
+				$cont,
+				$param->var->name,
+				$param->expr,
+			);
+		}
+
 		return $params ? implode('', $params) : "extract($cont);";
 	}
 

@@ -11,7 +11,7 @@ namespace Latte\Essential\Nodes;
 
 use Latte\Compiler\Nodes\ContentNode;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -22,7 +22,7 @@ use Latte\Compiler\Tag;
  */
 class WhileNode extends StatementNode
 {
-	public LegacyExprNode $condition;
+	public ExprNode $condition;
 	public ContentNode $content;
 	public bool $postTest;
 
@@ -31,15 +31,15 @@ class WhileNode extends StatementNode
 	public static function create(Tag $tag): \Generator
 	{
 		$node = new self;
-		$node->postTest = $tag->args === '';
+		$node->postTest = $tag->parser->isEnd();
 		if (!$node->postTest) {
-			$node->condition = $tag->getArgs();
+			$node->condition = $tag->parser->parseExpression();
 		}
 
 		[$node->content, $nextTag] = yield;
 		if ($node->postTest) {
 			$nextTag->expectArguments();
-			$node->condition = $nextTag->getArgs();
+			$node->condition = $nextTag->parser->parseExpression();
 		}
 
 		return $node;
@@ -53,7 +53,7 @@ class WhileNode extends StatementNode
 				<<<'XX'
 					do %line {
 						%raw
-					} while (%args);
+					} while (%raw);
 
 					XX,
 				$this->line,
@@ -62,7 +62,7 @@ class WhileNode extends StatementNode
 			)
 			: $context->format(
 				<<<'XX'
-					while (%args) %line {
+					while (%raw) %line {
 						%raw
 					}
 

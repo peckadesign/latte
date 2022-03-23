@@ -11,13 +11,15 @@ namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
 use Latte\Compiler\Block;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
+use Latte\Compiler\Nodes\Php\Expr\FilterNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
+use Latte\Compiler\Nodes\Php\Scalar;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PhpHelpers;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
-use Latte\Helpers;
 use Latte\Runtime\Template;
 
 
@@ -26,10 +28,10 @@ use Latte\Runtime\Template;
  */
 class IncludeBlockNode extends StatementNode
 {
-	public string $name;
-	public ?LegacyExprNode $from = null;
-	public ?LegacyExprNode $args = null;
-	public string $filter;
+	public ExprNode $name;
+	public ?ExprNode $from = null;
+	public ArrayNode $args;
+	public ?FilterNode $filter;
 	public int|string|null $layer;
 	public bool $parent = false;
 
@@ -39,25 +41,29 @@ class IncludeBlockNode extends StatementNode
 
 	public static function create(Tag $tag, TemplateParser $parser): self
 	{
+		$tag->expectArguments();
 		$node = new self;
-		[$node->name] = $tag->tokenizer->fetchWordWithModifier(['block', '#']);
+		[$node->name] = $tag->parser->parseWithModifier(['block', '#']);
+		$tokenName = $tag->parser->stream->peek(-1);
 
-		if ($tag->tokenizer->nextValue('from')) {
-			$tag->tokenizer->nextValue($tag->tokenizer::T_WHITESPACE);
-			$node->from = $tag->getWord();
+		$stream = $tag->parser->stream;
+		if ($stream->tryConsume('from')) {
+			$node->from = $tag->parser->parseUnquotedStringOrExpression();
+			$tag->parser->stream->tryConsume(',');
 		}
 
-		$node->args = $tag->getArgs();
-		$node->filter = $tag->modifiers;
+		$stream->tryConsume(',');
+		$node->args = $tag->parser->parseArguments();
+		$node->filter = $tag->parser->parseFilters();
 
-		$node->parent = $node->name === 'parent';
-		if ($node->parent && $tag->modifiers !== '') {
+		$node->parent = $tokenName->is('parent');
+		if ($node->parent && $node->filter) {
 			throw new CompileException('Filters are not allowed in {include parent}', $tag->line);
 
-		} elseif ($node->parent || $node->name === 'this') {
+		} elseif ($node->parent || $tokenName->is('this')) {
 			$item = $tag->closest(['block', 'define'], fn($item) => isset($item->data->block) && $item->data->block->name !== '');
 			if (!$item) {
-				throw new CompileException("Cannot include $node->name block outside of any block.", $tag->line);
+				throw new CompileException("Cannot include $tokenName->text block outside of any block.", $tag->line);
 			}
 
 			$node->name = $item->data->block->name;
@@ -71,17 +77,16 @@ class IncludeBlockNode extends StatementNode
 
 	public function print(PrintContext $context): string
 	{
-		$filter = $this->filter;
-		$noEscape = Helpers::removeFilter($filter, 'noescape');
-		if ($filter && !$noEscape) {
-			$filter .= '|escape';
-		}
+		$filter = $noEscape = (string) $this->filter?->name === 'noescape'
+			? $this->filter->inner
+			: ($this->filter ? FilterNode::escapeFilter($this->filter) : null);
+
 		$filterArg = $filter
 			? $context->format(
 				'function ($s, $type) { $ʟ_fi = new LR\FilterInfo($type); return %modifyContent($s); }',
 				$filter,
 			)
-			: PhpHelpers::dump($noEscape || $this->parent ? null : implode('', $context->getEscapingContext()));
+			: ($noEscape || $this->parent ? '' : PhpHelpers::dump(implode('', $context->getEscapingContext())));
 
 		return $this->from
 			? $this->printBlockFrom($context, $filterArg)
@@ -91,16 +96,19 @@ class IncludeBlockNode extends StatementNode
 
 	private function printBlock(PrintContext $context, string $filterArg): string
 	{
-		$block = $this->blocks[$this->layer][$this->name] ?? $this->blocks[Template::LayerLocal][$this->name] ?? null;
+		if ($this->name instanceof Scalar\StringNode || $this->name instanceof Scalar\LNumberNode) {
+			$staticName = (string) $this->name->value;
+			$block = $this->blocks[$this->layer][$staticName] ?? $this->blocks[Template::LayerLocal][$staticName] ?? null;
+		}
+
 		return $context->format(
 			'$this->renderBlock' . ($this->parent ? 'Parent' : '')
-			. '(' . (Helpers::isNameDynamic($this->name) ? '%word' : '%dump') . ', '
-			. '%array? + '
-			. ($block && !$block->parameters ? 'get_defined_vars()' : '[]')
+			. '(%raw, %raw? + '
+			. (isset($block) && !$block->parameters ? 'get_defined_vars()' : '[]')
 			. '%raw) %line;',
 			$this->name,
 			$this->args,
-			$filterArg === 'null' ? '' : ", $filterArg",
+			$filterArg ? ", $filterArg" : '',
 			$this->line,
 		);
 	}
@@ -109,7 +117,7 @@ class IncludeBlockNode extends StatementNode
 	private function printBlockFrom(PrintContext $context, string $filterArg): string
 	{
 		return $context->format(
-			'$this->createTemplate(%word, %array? + $this->params, "include")->renderToContentType(%raw, %word) %line;',
+			'$this->createTemplate(%raw, %raw? + $this->params, "include")->renderToContentType(%raw, %raw) %line;',
 			$this->from,
 			$this->args,
 			$filterArg,
@@ -127,9 +135,13 @@ class IncludeBlockNode extends StatementNode
 
 	public function &getIterator(): \Generator
 	{
+		yield $this->name;
 		if ($this->from) {
 			yield $this->from;
 		}
 		yield $this->args;
+		if ($this->filter) {
+			yield $this->filter;
+		}
 	}
 }

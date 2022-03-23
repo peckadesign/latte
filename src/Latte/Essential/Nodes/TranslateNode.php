@@ -11,14 +11,14 @@ namespace Latte\Essential\Nodes;
 
 use Latte\Compiler\Nodes\ContentNode;
 use Latte\Compiler\Nodes\FragmentNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
 use Latte\Compiler\Nodes\NopNode;
+use Latte\Compiler\Nodes\Php\Expr\FilterNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
-use Latte\Helpers;
 
 
 /**
@@ -27,18 +27,20 @@ use Latte\Helpers;
 class TranslateNode extends StatementNode
 {
 	public ?ContentNode $content = null;
-	public ?LegacyExprNode $expression = null;
-	public ?string $filter;
+	public ?ExprNode $expression = null;
+	public ?FilterNode $filter;
 
 
 	/** @return \Generator<int, ?array, array{FragmentNode, ?Tag}, self|NopNode> */
 	public static function create(Tag $tag, TemplateParser $parser): \Generator
 	{
-		$tag->extractModifier();
 		$node = new self;
-		$node->expression = $tag->getArgs();
-		$node->filter = $tag->modifiers;
+		$stream = $tag->parser->stream;
+		if ($stream->current() && !$stream->is('|')) {
+			$node->expression = $tag->parser->parseExpression();
+		}
 
+		$node->filter = $tag->parser->parseFilters();
 		if (!$node->expression) {
 			if ($tag->void) {
 				return new NopNode;
@@ -52,12 +54,9 @@ class TranslateNode extends StatementNode
 
 	public function print(PrintContext $context): string
 	{
-		$filter = $this->filter;
-		if (Helpers::removeFilter($filter, 'noescape')) {
-			$context->checkFilterIsAllowed('noescape');
-		} else {
-			$filter .= '|escape';
-		}
+		$filter = (string) $this->filter?->name === 'noescape'
+			? $this->filter->inner
+			: FilterNode::escapeFilter($this->filter);
 
 		return $this->content
 			? $this->printCapturing($context, $filter)
@@ -65,10 +64,10 @@ class TranslateNode extends StatementNode
 	}
 
 
-	private function printExpression(PrintContext $context, ?string $filter): string
+	private function printExpression(PrintContext $context, ?FilterNode $filter): string
 	{
 		return $context->format(
-			'echo %modify(($this->filters->translate)(%args)) %line;',
+			'echo %modify(($this->filters->translate)(%raw)) %line;',
 			$filter,
 			$this->expression,
 			$this->line,
@@ -76,7 +75,7 @@ class TranslateNode extends StatementNode
 	}
 
 
-	private function printCapturing(PrintContext $context, ?string $filter): string
+	private function printCapturing(PrintContext $context, ?FilterNode $filter): string
 	{
 		if (
 			$this->content instanceof FragmentNode
@@ -127,6 +126,9 @@ class TranslateNode extends StatementNode
 		}
 		if ($this->expression) {
 			yield $this->expression;
+		}
+		if ($this->filter) {
+			yield $this->filter;
 		}
 	}
 }

@@ -155,6 +155,21 @@ final class TagParser extends TagParserData
 	}
 
 
+	public function parseType(): ?string
+	{
+		$kind = [
+			Token::Php_Identifier, Token::Php_ConstantString, Token::Php_Ellipsis, Token::Php_Array, Token::Php_LNumber, Token::Php_NameFullyQualified, Token::Php_NameQualified,
+			'(', ')', '<', '>', '[', ']', '|', '&', '{', '}', ':', ',', '=', '?',
+		];
+		$res = null;
+		while ($token = $this->stream->tryConsume(...$kind)) {
+			$res .= $token->text;
+		}
+
+		return $res;
+	}
+
+
 	/** @throws CompileException */
 	private function parse(string $schema, bool $recovery = false)
 	{
@@ -307,7 +322,7 @@ final class TagParser extends TagParserData
 
 	protected function handleBuiltinTypes(NameNode $name): NameNode|Node\IdentifierNode
 	{
-		static $builtinTypes = [
+		$builtinTypes = [
 			'bool' => true, 'int' => true, 'float' => true, 'string' => true, 'iterable' => true, 'void' => true,
 			'object' => true, 'null' => true, 'false' => true, 'mixed' => true, 'never' => true,
 		];

@@ -70,3 +70,24 @@ Assert::match(
 		XX,
 	$latte->compile('{_ /}'),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		Translate:
+			Variable:
+				name: var
+			Filter:
+				Identifier:
+					name: trim
+		Text:
+			content: '  '
+		Translate:
+			Fragment:
+				Text:
+					content: '...'
+			Filter:
+				Identifier:
+					name: trim
+	XX, exportTraversing('{_$var|trim}  {_|trim}...{/_}'));

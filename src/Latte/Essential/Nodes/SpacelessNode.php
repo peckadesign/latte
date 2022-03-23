@@ -28,7 +28,6 @@ class SpacelessNode extends StatementNode
 	/** @return \Generator<int, ?array, array{FragmentNode, ?Tag}, self> */
 	public static function create(Tag $tag): \Generator
 	{
-		$tag->expectArguments(false);
 		$node = new self;
 		[$node->content] = yield;
 		return $node;

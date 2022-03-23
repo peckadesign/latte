@@ -10,6 +10,8 @@ declare(strict_types=1);
 namespace Latte\Essential;
 
 use Latte;
+use Latte\Compiler\Node;
+use Latte\Compiler\Nodes\Php\Scalar;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
@@ -22,8 +24,12 @@ use Nette;
  */
 final class Extension extends Latte\Extension
 {
+	private array $functions;
+
+
 	public function beforeCompile(Latte\Engine $engine): void
 	{
+		$this->functions = $engine->getFunctions();
 	}
 
 
@@ -174,7 +180,9 @@ final class Extension extends Latte\Extension
 	public function getPasses(): array
 	{
 		return [
+			[Passes\InternalVariablesPass::class, 'process'],
 			[Passes\OverwrittenVariablesPass::class, 'process'],
+			fn(Node $node) => Passes\CustomFunctionsPass::process($node, $this->functions),
 		];
 	}
 
@@ -185,11 +193,13 @@ final class Extension extends Latte\Extension
 	 */
 	private function includeSplitter(Tag $tag, TemplateParser $parser): Nodes\IncludeBlockNode|Nodes\IncludeFileNode
 	{
-		$tag->extractModifier();
 		$tag->expectArguments();
-		[$name, $mod] = $tag->tokenizer->fetchWordWithModifier(['block', 'file', '#']);
-		$tag->tokenizer->reset();
-		return $mod === 'file' || (!$mod && $name && !preg_match('~[\w-]+$~DA', $name))
+		[$name, $mod] = $tag->parser->parseWithModifier(['block', 'file', '#']);
+		$file = $mod !== 'block' && $mod !== '#'
+			&& ($mod === 'file' || !($name instanceof Scalar\StringNode && preg_match('~[\w-]+$~DA', $name->value)));
+
+		$tag->parser->stream->seek(0);
+		return $file
 			? Nodes\IncludeFileNode::create($tag)
 			: Nodes\IncludeBlockNode::create($tag, $parser);
 	}

@@ -85,3 +85,24 @@ Assert::match(
 		XX,
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Fragment:
+		If:
+			Variable:
+				name: a
+			Fragment:
+				Text:
+					content: '.if.'
+			If:
+				Variable:
+					name: b
+				Fragment:
+					Text:
+						content: '.elseif.'
+				Fragment:
+					Text:
+						content: '.else.'
+	XX, exportTraversing('{if $a}.if.{elseif $b}.elseif.{else}.else.{/if}'));

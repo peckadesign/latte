@@ -14,6 +14,7 @@ use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
+use Latte\Compiler\Token;
 use Latte\Context;
 
 
@@ -29,7 +30,14 @@ class ContentTypeNode extends StatementNode
 	public static function create(Tag $tag, TemplateParser $parser): self
 	{
 		$tag->expectArguments();
-		$type = $tag->args;
+		$stream = $tag->parser->stream;
+		$type = '';
+		while ($token = $stream->tryConsume()) {
+			$type .= $token->text;
+			if ($stream->peek(0)?->is(Token::Php_Whitespace)) {
+				$type .= $stream->peek(0)->text;
+			}
+		}
 
 		if (!$tag->isInHead() && !($tag->htmlElement?->name === 'script' && str_contains($type, 'html'))) {
 			throw new CompileException('{contentType} is allowed only in template header.', $tag->line);

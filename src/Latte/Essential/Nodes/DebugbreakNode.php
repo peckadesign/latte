@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace Latte\Essential\Nodes;
 
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -20,13 +20,13 @@ use Latte\Compiler\Tag;
  */
 class DebugbreakNode extends StatementNode
 {
-	public ?LegacyExprNode $condition;
+	public ?ExprNode $condition;
 
 
 	public static function create(Tag $tag): self
 	{
 		$node = new self;
-		$node->condition = $tag->getArgs();
+		$node->condition = $tag->parser->isEnd() ? null : $tag->parser->parseExpression();
 		return $node;
 	}
 
