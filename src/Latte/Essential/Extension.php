@@ -58,6 +58,7 @@ final class Extension extends Latte\Extension
 			'trace' => [Nodes\TraceNode::class, 'create'],
 			'l' => fn() => new TextNode('{'),
 			'r' => fn() => new TextNode('}'),
+			'syntax' => [Tags\SyntaxTag::class, 'create'],
 
 			'_' => [Nodes\TranslateNode::class, 'create'],
 			'=' => [Nodes\PrintNode::class, 'create'],

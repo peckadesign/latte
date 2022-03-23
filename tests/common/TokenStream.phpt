@@ -11,7 +11,7 @@ require __DIR__ . '/../bootstrap.php';
 
 
 test('empty', function () {
-	$stream = new TokenStream([]);
+	$stream = new TokenStream(new ArrayIterator([]));
 	Assert::null($stream->current());
 	Assert::false($stream->is());
 	Assert::null($stream->peek(0));
@@ -22,7 +22,7 @@ test('empty', function () {
 
 test('current()', function () {
 	$token = new LegacyToken;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->current());
 	Assert::same($token, $stream->tryConsume());
@@ -34,7 +34,7 @@ test('is()', function () {
 	$token = new LegacyToken;
 	$token->text = 'foo';
 	$token->type = LegacyToken::TEXT;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::false($stream->is());
 	Assert::true($stream->is('foo'));
@@ -50,7 +50,7 @@ test('is()', function () {
 test('peek()', function () {
 	$token1 = new LegacyToken;
 	$token2 = new LegacyToken;
-	$stream = new TokenStream([$token1, $token2]);
+	$stream = new TokenStream(new ArrayIterator([$token1, $token2]));
 
 	Assert::null($stream->peek(-1));
 	Assert::same(0, $stream->getIndex());
@@ -77,7 +77,7 @@ test('peek() jump forward', function () {
 	$token1 = new LegacyToken;
 	$token2 = new LegacyToken;
 	$token3 = new LegacyToken;
-	$stream = new TokenStream([$token1, $token2, $token3]);
+	$stream = new TokenStream(new ArrayIterator([$token1, $token2, $token3]));
 
 	Assert::same($token3, $stream->peek(2));
 });
@@ -86,7 +86,7 @@ test('peek() jump forward', function () {
 test('consume() any token', function () {
 	$token = new LegacyToken;
 	$token->line = 123;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->consume());
 	Assert::same(1, $stream->getIndex());
@@ -103,7 +103,7 @@ test('consume() kind of token', function () {
 	$token = new LegacyToken;
 	$token->text = 'foo';
 	$token->type = LegacyToken::TEXT;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::exception(
 		fn() => $stream->consume('bar'),
@@ -118,7 +118,7 @@ test('consume() kind of token', function () {
 
 test('tryConsume() any token', function () {
 	$token = new LegacyToken;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::same($token, $stream->tryConsume());
 	Assert::same(1, $stream->getIndex());
@@ -131,7 +131,7 @@ test('tryConsume() kind of token', function () {
 	$token = new LegacyToken;
 	$token->text = 'foo';
 	$token->type = LegacyToken::TEXT;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::null($stream->tryConsume('bar'));
 	Assert::same(0, $stream->getIndex());
@@ -142,18 +142,48 @@ test('tryConsume() kind of token', function () {
 
 test('seek()', function () {
 	$token = new LegacyToken;
-	$stream = new TokenStream([$token]);
+	$stream = new TokenStream(new ArrayIterator([$token]));
 
 	Assert::noError(fn() => $stream->seek(0));
-	Assert::noError(fn() => $stream->seek(1));
 	Assert::exception(
-		fn() => $stream->seek(2),
+		fn() => $stream->seek(1),
 		InvalidArgumentException::class,
 		'The position is out of range.',
 	);
+	$stream->consume();
+	Assert::noError(fn() => $stream->seek(1));
 	Assert::exception(
 		fn() => $stream->seek(-1),
 		InvalidArgumentException::class,
 		'The position is out of range.',
+	);
+});
+
+
+test('generator is read on the first usage', function () {
+	$generator = function () {
+		throw new Exception('Generator');
+		yield null;
+	};
+	$stream = new TokenStream($generator());
+	Assert::exception(
+		fn() => $stream->current(),
+		Throwable::class,
+		'Generator',
+	);
+});
+
+
+test('generator is read continually', function () {
+	$generator = function () {
+		yield new LegacyToken;
+		throw new Exception('Generator');
+	};
+	$stream = new TokenStream($generator());
+	$stream->consume();
+	Assert::exception(
+		fn() => $stream->current(),
+		Throwable::class,
+		'Generator',
 	);
 });
