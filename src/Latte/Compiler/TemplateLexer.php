@@ -49,8 +49,8 @@ final class TemplateLexer
 	private bool $xmlMode;
 
 
-	/** @return \Generator<Token> */
-	public function tokenize(string $template, string $contentType = Context::Html): \Generator
+	/** @return \Fiber<Token> */
+	public function tokenize(string $template, string $contentType = Context::Html): \Fiber
 	{
 		$this->input = $this->normalize($template);
 		$this->offset = 0;
@@ -60,20 +60,22 @@ final class TemplateLexer
 		$this->setSyntax(null);
 		$this->tagLexer = new TagLexer;
 
-		do {
-			$state = $this->states[0];
-			yield from $this->{$state['name']}(...$state['args']);
-		} while ($this->states[0]['name'] !== self::StateEnd);
+		return new \Fiber(function (): void {
+			do {
+				$state = $this->states[0];
+				$this->{$state['name']}(...$state['args']);
+			} while ($this->states[0]['name'] !== self::StateEnd);
 
-		if ($this->offset < strlen($this->input)) {
-			throw new CompileException('Unexpected ' . substr($this->input, $this->offset, 10), $this->line, $this->column);
-		}
+			if ($this->offset < strlen($this->input)) {
+				throw new CompileException("Unexpected '" . substr($this->input, $this->offset, 10) . "'", $this->line, $this->column);
+			}
+		});
 	}
 
 
-	private function statePlain(): \Generator
+	private function statePlain(): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??
 			(
 				(?<Latte_TagOpen>' . self::ReIndent . $this->delimiters[0] . '(?!\*))|      # {tag
@@ -92,10 +94,10 @@ final class TemplateLexer
 	}
 
 
-	private function stateLatteTag(): \Generator
+	private function stateLatteTag(): void
 	{
 		$this->popState();
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Slash>/)?
 			(?<Latte_Name>=|_(?!_)|[a-z]\w*+(?:[.:-]\w+)*+(?!::|\(|\\\\))?   # name, /name, but not function( or class:: or namespace\
 		~xsiAu');
@@ -104,7 +106,7 @@ final class TemplateLexer
 			throw new CompileException('Malformed tag contents.', $this->line);
 		}
 
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Slash>/)?
 			(?<Latte_TagClose>' . $this->delimiters[1] . '([ \t]*\n)?)
 		~xsiAu');
@@ -114,9 +116,11 @@ final class TemplateLexer
 			if ($tokens && end($tokens)->is('/')) {
 				end($tokens)->type = Token::Slash;
 			}
-			yield from $tokens;
+			foreach ($tokens as $token) {
+				\Fiber::suspend($token);
+			}
 
-			$m = yield from $this->match('~
+			$m = $this->match('~
 				(?<Latte_TagClose>' . $this->delimiters[1] . '([ \t]*\n)?)
 			~xsiAu');
 		}
@@ -127,10 +131,10 @@ final class TemplateLexer
 	}
 
 
-	private function stateLatteComment(): \Generator
+	private function stateLatteComment(): void
 	{
 		$this->popState();
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??
 			(?<Latte_CommentClose>\*' . $this->delimiters[1] . '([ \t]*\n{1,2})?)
 		~xsiAu');
@@ -141,9 +145,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlText(): \Generator
+	private function stateHtmlText(): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??
 			(
 				(?<Html_TagOpen>' . self::ReIndent . '<)(?<Slash>/)?(?<Html_Name>' . self::ReTagName . ')|  # <tag </tag
@@ -172,9 +176,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlTag(?string $tagName = null, ?string $attrName = null): \Generator
+	private function stateHtmlTag(?string $tagName = null, ?string $attrName = null): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Html_Name>' . self::ReValueName . ')|                   # HTML attribute name/value
 			(?<Whitespace>\s+)|                                        # whitespace
 			(?<Equals>=)|
@@ -210,9 +214,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlQuotedValue(string $quote): \Generator
+	private function stateHtmlQuotedValue(string $quote): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??(
 				(?<Quote>' . $quote . ')|
 				(?<Latte_TagOpen>' . $this->delimiters[0] . '(?!\*))|      # {tag
@@ -232,9 +236,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlQuotedNAttrValue(string $quote): \Generator
+	private function stateHtmlQuotedNAttrValue(string $quote): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??(?<Quote>' . $quote . ')|
 		~xsiAu');
 
@@ -246,9 +250,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlRCData(string $tagName): \Generator
+	private function stateHtmlRCData(string $tagName): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??
 			(
 				(?<Html_TagOpen>' . self::ReIndent . '<)(?<Slash>/)(?<Html_Name>' . preg_quote($tagName, '~') . ')| # </tag
@@ -270,9 +274,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlComment(): \Generator
+	private function stateHtmlComment(): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??
 			(
 				(?<Html_CommentClose>-->)|                                                  # -->
@@ -293,9 +297,9 @@ final class TemplateLexer
 	}
 
 
-	private function stateHtmlBogus(): \Generator
+	private function stateHtmlBogus(): void
 	{
-		$m = yield from $this->match('~
+		$m = $this->match('~
 			(?<Text>.+?)??(
 				(?<Html_TagClose>>)|                                       # >
 				(?<Latte_TagOpen>' . $this->delimiters[0] . '(?!\*))|      # {tag
@@ -318,7 +322,7 @@ final class TemplateLexer
 	/**
 	 * Matches next token.
 	 */
-	private function match(string $re): \Generator
+	private function match(string $re): array
 	{
 		if (!preg_match($re, $this->input, $matches, PREG_UNMATCHED_AS_NULL, $this->offset)) {
 			if (preg_last_error()) {
@@ -330,7 +334,7 @@ final class TemplateLexer
 
 		foreach ($matches as $k => $v) {
 			if ($v !== null && !\is_int($k)) {
-				yield new Token(\constant(Token::class . '::' . $k), $v, $this->line, $this->column);
+				\Fiber::suspend(new Token(\constant(Token::class . '::' . $k), $v, $this->line, $this->column));
 
 				if ($lines = substr_count($v, "\n")) {
 					$this->line += $lines;

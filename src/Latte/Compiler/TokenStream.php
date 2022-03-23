@@ -25,11 +25,11 @@ final class TokenStream
 	private array $tokens = [];
 	private int $index = 0;
 	private bool $end = false;
-	private \Iterator $source;
+	private \Fiber $source;
 	private array $hidden;
 
 
-	public function __construct(\Iterator $source, array $hidden = [])
+	public function __construct(\Fiber $source, array $hidden = [])
 	{
 		$this->source = $source;
 		$this->hidden = array_flip($hidden);
@@ -68,16 +68,14 @@ final class TokenStream
 	{
 		$pos = $this->index + $offset;
 		while (!$this->end && $pos >= 0 && !isset($this->tokens[$pos])) {
-			if ($this->tokens) {
-				$this->source->next();
-			}
-
-			if (!$this->source->valid()) {
+			if ($this->source->isTerminated()) {
 				$this->end = true;
 				break;
+			} elseif ($this->tokens) {
+				$this->tokens[] = $this->source->resume();
+			} else {
+				$this->tokens[] = $this->source->start();
 			}
-
-			$this->tokens[] = $this->source->current();
 		}
 
 		return $this->tokens[$pos] ?? null;

@@ -41,7 +41,12 @@ final class TagParser extends TagParserData
 
 	public function __construct(array $tokens)
 	{
-		$this->stream = new TokenStream(new \ArrayIterator($tokens), self::TokensHidden);
+		$fiber = new \Fiber(function () use ($tokens): void {
+			foreach ($tokens as $token) {
+				\Fiber::suspend($token);
+			}
+		});
+		$this->stream = new TokenStream($fiber, self::TokensHidden);
 	}
 
 
