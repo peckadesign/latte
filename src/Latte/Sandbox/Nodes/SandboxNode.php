@@ -9,7 +9,8 @@ declare(strict_types=1);
 
 namespace Latte\Sandbox\Nodes;
 
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
@@ -20,16 +21,17 @@ use Latte\Compiler\Tag;
  */
 class SandboxNode extends StatementNode
 {
-	public LegacyExprNode $file;
-	public LegacyExprNode $args;
+	public ExprNode $file;
+	public ArrayNode $args;
 
 
 	public static function create(Tag $tag): self
 	{
 		$tag->expectArguments();
 		$node = new self;
-		$node->file = $tag->getWord();
-		$node->args = $tag->getArgs();
+		$node->file = $tag->parser->parseUnquotedStringOrExpression();
+		$tag->parser->stream->tryConsume(',');
+		$node->args = $tag->parser->parseArguments();
 		return $node;
 	}
 
@@ -40,7 +42,7 @@ class SandboxNode extends StatementNode
 			<<<'XX'
 				ob_start(fn() => '');
 				try {
-					$this->createTemplate(%word, %array, 'sandbox')->renderToContentType(%dump) %line;
+					$this->createTemplate(%raw, %raw, 'sandbox')->renderToContentType(%dump) %line;
 					echo ob_get_clean();
 				} catch (\Throwable $ʟ_e) {
 					if (isset($this->global->coreExceptionHandler)) {

@@ -10,13 +10,13 @@ declare(strict_types=1);
 namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr\FilterNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
 use Latte\Compiler\TemplateParser;
 use Latte\Context;
-use Latte\Helpers;
 
 
 /**
@@ -24,8 +24,8 @@ use Latte\Helpers;
  */
 class PrintNode extends StatementNode
 {
-	public LegacyExprNode $expression;
-	public string $filter;
+	public ExprNode $expression;
+	public ?FilterNode $filter;
 
 
 	public static function create(Tag $tag, TemplateParser $parser): self
@@ -41,23 +41,19 @@ class PrintNode extends StatementNode
 			throw new CompileException("Do not place {$tag->getNotation(true)} inside quotes in JavaScript.", $tag->line);
 		}
 
-		$tag->extractModifier();
 		$tag->expectArguments();
 		$node = new self;
-		$node->expression = $tag->getArgs();
-		$node->filter = $tag->modifiers;
+		$node->expression = $tag->parser->parseExpression();
+		$node->filter = $tag->parser->parseFilters();
 		return $node;
 	}
 
 
 	public function print(PrintContext $context): string
 	{
-		$filter = $this->filter;
-		if (Helpers::removeFilter($filter, 'noescape')) {
-			$context->checkFilterIsAllowed('noescape');
-		} else {
-			$filter .= '|escape';
-		}
+		$filter = (string) $this->filter?->name === 'noescape'
+			? $this->filter->inner
+			: FilterNode::escapeFilter($this->filter);
 
 		return $context->format(
 			"echo %modify(%raw) %line;\n",
@@ -77,5 +73,8 @@ class PrintNode extends StatementNode
 	public function &getIterator(): \Generator
 	{
 		yield $this->expression;
+		if ($this->filter) {
+			yield $this->filter;
+		}
 	}
 }

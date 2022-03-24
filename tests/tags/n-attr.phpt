@@ -64,3 +64,16 @@ Assert::exception(
 	Latte\CompileException::class,
 	'Unexpected attribute n:inner-attr, did you mean n:inner-try?',
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Element:
+				name: input
+				Auxiliary:
+				Fragment:
+					Auxiliary:
+	XX, exportTraversing('<input n:attr="title => hello">'));

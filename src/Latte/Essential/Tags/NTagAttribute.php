@@ -11,8 +11,8 @@ namespace Latte\Essential\Tags;
 
 use Latte;
 use Latte\CompileException;
-use Latte\Compiler\Node;
-use Latte\Compiler\PrintContext;
+use Latte\Compiler\Nodes\Php\Expr\StaticCallNode;
+use Latte\Compiler\Nodes\Php\Scalar;
 use Latte\Compiler\Tag;
 
 
@@ -30,22 +30,12 @@ final class NTagAttribute
 		}
 
 		$tag->expectArguments();
-		$tag->htmlElement->variableName = new class ($tag) extends Node {
-			public function __construct(
-				public $tag,
-			) {
-			}
-
-
-			public function print(PrintContext $context): string
-			{
-				return 'Latte\Essential\Tags\NTagAttribute::check('
-					. var_export($this->tag->htmlElement->name, true)
-					. ', '
-					. $this->tag->getArgs()->print($context)
-					. ')';
-			}
-		};
+		$args = $tag->parser->parseExpression();
+		$tag->htmlElement->variableName = StaticCallNode::from(
+			self::class,
+			'check',
+			[new Scalar\StringNode($tag->htmlElement->name), $args],
+		);
 	}
 
 

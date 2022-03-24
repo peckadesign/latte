@@ -30,10 +30,11 @@ final class NClassAttribute
 		}
 
 		$tag->expectArguments();
+		$args = $tag->parser->parseArguments();
 		$tag->htmlElement->attrs->append(new AuxiliaryNode(
 			fn(PrintContext $context) => $context->format(
-				'echo ($ʟ_tmp = array_filter(%array)) ? \' class="\' . LR\Filters::escapeHtmlAttr(implode(" ", array_unique($ʟ_tmp))) . \'"\' : "" %line;',
-				$tag->tokenizer,
+				'echo ($ʟ_tmp = array_filter(%raw)) ? \' class="\' . LR\Filters::escapeHtmlAttr(implode(" ", array_unique($ʟ_tmp))) . \'"\' : "" %line;',
+				$args,
 				$tag->line,
 			),
 			'n:class',

@@ -32,7 +32,6 @@ class IfContentNode extends StatementNode
 	/** @return \Generator<int, ?array, array{AreaNode, ?Tag}, self> */
 	public static function create(Tag $tag, TemplateParser $parser): \Generator
 	{
-		$tag->expectArguments(false);
 		$node = new self;
 		$node->id = $parser->generateId();
 		[$node->content] = yield;

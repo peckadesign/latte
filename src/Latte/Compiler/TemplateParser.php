@@ -161,6 +161,7 @@ final class TemplateParser
 		}
 
 		$endTag = $tag = $this->pushTag($this->parseLatteTag());
+		$checkEnds[] = $tag;
 		$this->tagDepth++;
 
 		$parser = $this->getTagParser($tag->name, $tag->line);
@@ -182,6 +183,7 @@ final class TemplateParser
 
 				if ($endTag) {
 					$this->popTag();
+					$checkEnds[] = $endTag;
 					if ($endTag->closing) {
 						break;
 					}
@@ -199,7 +201,7 @@ final class TemplateParser
 
 		} else {
 			if ($tag->void) {
-				throw new CompileException('Unexpected /} in tag {' . $tag->name . $tag->args . ' /}', $tag->line);
+				throw new CompileException('Unexpected /} in tag ' . substr($tag->getNotation(true), 0, -1) . '/}', $tag->line);
 			}
 
 			$node = $res;
@@ -207,6 +209,10 @@ final class TemplateParser
 
 		if (!$node instanceof Node) {
 			throw new CompileException("Unexpected value returned by {{$tag->name}} parser.", $tag->line);
+		}
+
+		foreach ($checkEnds as $tmp) {
+			$tmp->expectEnd();
 		}
 
 		$outputMode = $node instanceof Nodes\StatementNode
@@ -301,10 +307,9 @@ final class TemplateParser
 		if (!$end
 			|| ($end->name !== $start->name && $end->name !== '')
 			|| !$end->closing
-			|| $end->modifiers
-			|| ($end->args !== '' && $start->args !== '' && !str_starts_with($start->args . ' ', $end->args . ' '))
+			|| $end->void
 		) {
-			$tag = $end?->getNotation($end->args !== '') ?? 'end';
+			$tag = $end?->getNotation() ?? 'end';
 			throw new CompileException("Unexpected $tag, expecting {/$start->name}", ($end ?? $start)->line);
 		}
 	}
@@ -312,9 +317,8 @@ final class TemplateParser
 
 	public function checkBlockIsUnique(Block $block): void
 	{
-		$name = $block->name;
-		if (!preg_match('#^[a-z]#iD', $name)) {
-			throw new CompileException(ucfirst($block->tag->name) . " name must start with letter a-z, '{$name}' given.", $block->tag->line);
+		if ($block->isDynamic() || !preg_match('#^[a-z]#iD', $name = (string) $block->name->value)) {
+			throw new CompileException(ucfirst($block->tag->name) . " name must start with letter a-z, '$name' given.", $block->tag->line);
 		}
 
 		if ($block->layer === Template::LayerSnippet

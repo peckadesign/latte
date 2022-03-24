@@ -40,3 +40,22 @@ Assert::matchFile(
 	__DIR__ . '/expected/snippet.phtml',
 	$latte->compile($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			Snippet:
+				Variable:
+					name: name
+				Element:
+					name: div
+					Auxiliary:
+					Fragment:
+						Auxiliary:
+					Fragment:
+						Text:
+							content: '...'
+	XX, exportTraversing('<div n:snippet=$name>...</div>'));

@@ -73,3 +73,19 @@ Assert::match(
 		XX,
 	$latte->renderToString($template),
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+		Fragment:
+			IfChanged:
+				Array:
+					ArrayItem:
+						LNumber:
+							value: 3
+				Fragment:
+					Text:
+						content: '...'
+	XX, exportTraversing('{ifchanged 3}...{/ifchanged}'));

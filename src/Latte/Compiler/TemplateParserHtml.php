@@ -408,9 +408,12 @@ final class TemplateParserHtml
 					$toClose[] = [$gen, $tag];
 					continue;
 				}
-			} elseif (!$gen) {
-				$this->parser->popTag();
-				continue;
+			} else {
+				$tag->expectEnd();
+				if (!$gen) {
+					$this->parser->popTag();
+					continue;
+				}
 			}
 
 			throw new CompileException("Unexpected value returned by {$tag->getNotation()} parser.", $tag->line);
@@ -427,6 +430,7 @@ final class TemplateParserHtml
 			$node = $gen->getReturn();
 			$node->line = $tag->line;
 			$this->parser->popTag();
+			$tag->expectEnd();
 		}
 
 		return $node;

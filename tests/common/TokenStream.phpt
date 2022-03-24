@@ -214,3 +214,20 @@ test('hidden & peek', function () {
 	Assert::same($tokens[2], $stream->peek(2));
 	Assert::same(0, $stream->getIndex());
 });
+
+
+test('hidden & getText', function () {
+	$tokens = [
+		new Token(Token::Equals, '='),
+		new Token(Token::Text, 'a'),
+		new Token(Token::Whitespace, 'xx'),
+		new Token(Token::Text, 'c'),
+	];
+	$stream = new TokenStream(new ArrayIterator($tokens), [Token::Equals, Token::Whitespace]);
+
+	Assert::same('=axxc', $stream->getText());
+	Assert::same('axxc', $stream->getText(1));
+	Assert::same('axx', $stream->getText(1, 2));
+	$stream->consume();
+	Assert::same('axx', $stream->getText(1, 2));
+});

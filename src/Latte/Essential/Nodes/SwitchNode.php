@@ -11,7 +11,9 @@ namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
 use Latte\Compiler\Nodes\AreaNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\FragmentNode;
+use Latte\Compiler\Nodes\Php\Expr\ArrayNode;
+use Latte\Compiler\Nodes\Php\ExprNode;
 use Latte\Compiler\Nodes\StatementNode;
 use Latte\Compiler\Nodes\TextNode;
 use Latte\Compiler\PrintContext;
@@ -23,7 +25,9 @@ use Latte\Compiler\Tag;
  */
 class SwitchNode extends StatementNode
 {
-	public ?LegacyExprNode $expr;
+	public ?ExprNode $expr;
+
+	/** @var array<array{?ArrayNode, FragmentNode, int}> */
 	public array $cases = [];
 
 
@@ -31,7 +35,9 @@ class SwitchNode extends StatementNode
 	public static function create(Tag $tag): \Generator
 	{
 		$node = new self;
-		$node->expr = $tag->getArgs();
+		$node->expr = $tag->parser->isEnd()
+			? null
+			: $tag->parser->parseExpression();
 
 		[$content, $nextTag] = yield ['case', 'default'];
 		foreach ($content->children as $child) {
@@ -46,13 +52,12 @@ class SwitchNode extends StatementNode
 				$nextTag->expectArguments();
 				$tmp = $nextTag;
 				[$content, $nextTag] = yield ['case', 'default'];
-				$node->cases[] = [$tmp->getArgs(), $content, $tmp->line];
+				$node->cases[] = [$tmp->parser->parseArguments(), $content, $tmp->line];
 
 			} elseif ($nextTag?->name === 'default') {
 				if ($default++) {
 					throw new CompileException('Tag {switch} may only contain one {default} clause.', $nextTag->line);
 				}
-				$nextTag->expectArguments(false);
 				$tmp = $nextTag;
 				[$content, $nextTag] = yield ['case', 'default'];
 				$node->cases[] = [null, $content, $tmp->line];
@@ -83,7 +88,7 @@ class SwitchNode extends StatementNode
 
 			$first = false;
 			$res .= $context->format(
-				'if (in_array($ʟ_switch, %array, true)) %line { %raw } ',
+				'if (in_array($ʟ_switch, %raw, true)) %line { %raw } ',
 				$condition,
 				$line,
 				$stmt,

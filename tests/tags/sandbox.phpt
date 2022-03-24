@@ -53,3 +53,20 @@ Assert::exception(
 	Latte\SecurityViolationException::class,
 	"Access to 'item' property on a stdClass object is not allowed.",
 );
+
+
+// traversing
+Assert::match(<<<'XX'
+	Template:
+		Fragment:
+			Sandbox:
+				String:
+					value: inc1.latte
+				Array:
+					ArrayItem:
+						String:
+							value: var
+						LNumber:
+							value: 1
+		Fragment:
+	XX, exportTraversing('{sandbox inc1.latte, var => 1}'));

@@ -10,13 +10,14 @@ declare(strict_types=1);
 namespace Latte\Essential\Nodes;
 
 use Latte\CompileException;
-use Latte\Compiler\MacroTokens;
 use Latte\Compiler\Nodes\AreaNode;
-use Latte\Compiler\Nodes\LegacyExprNode;
+use Latte\Compiler\Nodes\Php\Expr;
+use Latte\Compiler\Nodes\Php\ExprNode;
+use Latte\Compiler\Nodes\Php\Scalar\StringNode;
 use Latte\Compiler\Nodes\StatementNode;
-use Latte\Compiler\PhpWriter;
 use Latte\Compiler\PrintContext;
 use Latte\Compiler\Tag;
+use Latte\Compiler\TagParser;
 use Latte\Compiler\TemplateParser;
 
 
@@ -28,7 +29,7 @@ use Latte\Compiler\TemplateParser;
  */
 class IfNode extends StatementNode
 {
-	public LegacyExprNode $condition;
+	public ExprNode $condition;
 	public AreaNode $then;
 	public ?AreaNode $else = null;
 	public ?int $elseLine = null;
@@ -41,21 +42,20 @@ class IfNode extends StatementNode
 	{
 		$node = new self;
 		$node->ifset = in_array($tag->name, ['ifset', 'elseifset'], true);
-		$node->capture = $tag->name === 'if' && $tag->args === '';
+		$node->capture = $tag->name === 'if' && $tag->parser->isEnd();
 		$node->line = $tag->line;
 		if (!$node->capture) {
 			$node->condition = $node->ifset
-				? new LegacyExprNode(self::buildCondition($tag))
-				: $tag->getArgs();
+				? self::buildCondition($tag->parser)
+				: $tag->parser->parseExpression();
 		}
 
 		[$node->then, $nextTag] = yield $node->capture ? ['else'] : ['else', 'elseif', 'elseifset'];
 
 		if ($nextTag?->name === 'else') {
-			if ($nextTag->args !== '' && str_starts_with($nextTag->args, 'if')) {
+			if ($nextTag->parser->stream->is('if')) {
 				throw new CompileException('Arguments are not allowed in {else}, did you mean {elseif}?', $nextTag->line);
 			}
-			$nextTag->expectArguments(false);
 			$node->elseLine = $nextTag->line;
 			[$node->else, $nextTag] = yield;
 
@@ -67,23 +67,24 @@ class IfNode extends StatementNode
 		}
 
 		if ($node->capture) {
-			$node->condition = $nextTag->getArgs();
+			$node->condition = $nextTag->parser->parseExpression();
 		}
 
 		return $node;
 	}
 
 
-	private static function buildCondition(Tag $tag): string
+	private static function buildCondition(TagParser $parser): ExprNode
 	{
-		$writer = new PhpWriter(null);
-		while ([$name, $block] = $tag->tokenizer->fetchWordWithModifier(['block', '#'])) {
-			$list[] = $block || preg_match('~\w[\w-]*$~DA', $name)
-				? '$this->hasBlock(' . $writer->formatWord($name) . ')'
-				: 'isset(' . $writer->formatArgs(new MacroTokens($name)) . ')';
-		}
+		$list = [];
+		do {
+			[$name, $block] = $parser->parseWithModifier(['block', '#'], unquotedString: false);
+			$list[] = $block || $name instanceof StringNode
+				? Expr\MethodCallNode::from(new Expr\VariableNode('this'), 'hasBlock', [$name])
+				: new Expr\IssetNode(Expr\MethodCallNode::argumentsFromValues([$name]));
+		} while ($parser->stream->tryConsume(','));
 
-		return implode(' && ', $list);
+		return Expr\BinaryOpNode::nest('&&', ...$list);
 	}
 
 

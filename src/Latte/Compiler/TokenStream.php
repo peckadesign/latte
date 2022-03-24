@@ -137,6 +137,20 @@ final class TokenStream
 
 
 	/**
+	 * Returns the text of all tokens in the stream.
+	 */
+	public function getText(int $start = 0, int $end = PHP_INT_MAX): string
+	{
+		$text = '';
+		while ($start++ <= $end && ($token = $this->peek($start - $this->index - 1))) {
+			$text .= $token->text;
+		}
+
+		return $text;
+	}
+
+
+	/**
 	 * @throws CompileException
 	 * @return never
 	 */
@@ -154,6 +168,7 @@ final class TokenStream
 			}
 		} while (true);
 
+		$expected = array_map(fn($item) => is_int($item) ? Token::NAMES[$item] : $item, $expected);
 		$last = $this->current() ?? $this->peek(-1);
 		throw new CompileException(
 			'Unexpected '

@@ -28,7 +28,8 @@ final class SyntaxTag
 	public static function create(Tag $tag, TemplateParser $parser): \Generator
 	{
 		$tag->expectArguments();
-		$parser->getLexer()->setSyntax($tag->args);
+		$token = $tag->parser->stream->consume();
+		$parser->getLexer()->setSyntax($token->text);
 		[$inner] = yield;
 		$parser->getLexer()->setSyntax(null);
 		return $inner;

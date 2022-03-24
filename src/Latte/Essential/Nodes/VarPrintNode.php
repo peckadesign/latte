@@ -24,8 +24,9 @@ class VarPrintNode extends StatementNode
 
 	public static function create(Tag $tag): self
 	{
+		$stream = $tag->parser->stream;
 		$node = new self;
-		$node->all = $tag->tokenizer->fetchWord() === 'all';
+		$node->all = $stream->tryConsume()?->text === 'all';
 		return $node;
 	}
 

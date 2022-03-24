@@ -21,7 +21,6 @@ class TraceNode extends StatementNode
 {
 	public static function create(Tag $tag): self
 	{
-		$tag->expectArguments(false);
 		return new self;
 	}
 
