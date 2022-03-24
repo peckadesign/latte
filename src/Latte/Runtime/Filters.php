@@ -454,7 +454,7 @@ class Filters
 		}
 		return strpos($format, '%') === false
 			? $time->format($format) // formats using date()
-			: strftime($format, $time->format('U') + 0); // formats according to locales
+			: @strftime($format, $time->format('U') + 0); // formats according to locales
 	}
 
 
