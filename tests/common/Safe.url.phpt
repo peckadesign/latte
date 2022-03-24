@@ -59,8 +59,8 @@ Assert::match('
 ));
 
 
-Assert::match('
-<a href="javascript:alert(1)" src="javascript:alert(1)" action="javascript:alert(1)" formaction="javascript:alert(1)" title="javascript:alert(1)"></a>
+Assert::match(
+'<a href="javascript:alert(1)" src="javascript:alert(1)" action="javascript:alert(1)" formaction="javascript:alert(1)" title="javascript:alert(1)"></a>
 <object data="javascript:alert(1)"></object>
 ', $latte->renderToString('
 {contentType xml}

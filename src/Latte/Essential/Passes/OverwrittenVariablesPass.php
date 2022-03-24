@@ -36,7 +36,7 @@ final class OverwrittenVariablesPass
 			}
 		});
 		if ($vars) {
-			$context->initialization .= $context->format(
+			array_unshift($node->head->children, new Latte\Compiler\Nodes\AuxiliaryNode(fn() => $context->format(
 				<<<'XX'
 					if (!$this->getReferringTemplate() || $this->getReferenceType() === 'extends') {
 						foreach (array_intersect_key(%dump, $this->params) as $ʟ_v => $ʟ_l) {
@@ -46,7 +46,7 @@ final class OverwrittenVariablesPass
 
 					XX,
 				array_map(fn($l) => implode(', ', $l), $vars),
-			);
+			)));
 		}
 	}
 }

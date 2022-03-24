@@ -158,10 +158,7 @@ class Template
 	{
 		$level = ob_get_level();
 		try {
-			$this->prepare();
-			if (!$this->doRender($block)) {
-				$this->main();
-			}
+			$this->doRender($block);
 
 		} catch (\Throwable $e) {
 			while (ob_get_level() > $level) {
@@ -173,8 +170,10 @@ class Template
 	}
 
 
-	private function doRender(?string $block = null): bool
+	private function doRender(?string $block): void
 	{
+		$params = $this->prepare();
+
 		if ($this->parentName === null && isset($this->global->coreParentFinder)) {
 			$this->parentName = ($this->global->coreParentFinder)($this);
 		}
@@ -189,10 +188,8 @@ class Template
 			}
 
 		} elseif ($this->parentName) { // extends
-			ob_start(fn() => '');
-			$this->params = $this->main();
-			ob_end_clean();
-			$this->createTemplate($this->parentName, $this->params, 'extends')->render($block);
+			$this->params = $params;
+			$this->createTemplate($this->parentName, $params, 'extends')->render($block);
 
 		} elseif ($block !== null) { // single block rendering
 			$this->renderBlock($block, $this->params);
@@ -203,10 +200,8 @@ class Template
 		) {
 			// nothing
 		} else {
-			return false;
+			$this->main($params);
 		}
-
-		return true;
 	}
 
 
@@ -257,19 +252,16 @@ class Template
 	}
 
 
-	/** @internal */
-	public function prepare(): void
+	/** @return mixed[] */
+	public function prepare(): array
 	{
+		return $this->params;
 	}
 
 
-	/**
-	 * @internal
-	 * @return mixed[]
-	 */
-	public function main(): array
+	/** @param mixed[] $params */
+	public function main(array $params): void
 	{
-		return [];
 	}
 
 

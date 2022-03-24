@@ -63,11 +63,10 @@ Assert::match(
 
 Assert::match(
 	<<<'XX'
-		%A%
-				extract($this->params);
-
-				return get_defined_vars();
-		%A%
-		XX,
+%A%
+	{
+	}
+%A%
+XX,
 	$latte->compile('{_ /}'),
 );
